@@ -1,6 +1,6 @@
-# OpenSpec Proposal - Amazon Rainforest Protection (ARPT)
+# OpenSpec Proposal - Robson Rojas
 # Project: Guardian-Edge-AI-V1
-spec_version: "2.0.0"
+spec_version: "1.0.0"
 
 metadata:
   project_name: "Acoustic Monitoring"
@@ -35,3 +35,16 @@ constraints:
   network:
     primary: "LoRaWAN (AU915)"
     secondary: "Mesh-Networking (Reticulum)"
+
+## ADDED Requirements
+
+### Requirement: core-detection
+The system MUST identify chainsaw (motoserra) sounds from raw audio data using a quantized TFLite Micro model.
+
+#### Scenario: positive-detection
+- **WHEN** audio buffer contains a 1-second segment matching the chainsaw spectral profile with >0.85 confidence
+- **THEN** an alert is triggered immediately
+
+#### Scenario: false-positive-suppression
+- **WHEN** audio buffer contains bird songs or wind noise
+- **THEN** no alert is triggered and confidence score remains < 0.2

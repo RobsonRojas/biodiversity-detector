@@ -35,3 +35,12 @@ constraints:
   network:
     primary: "LoRaWAN (AU915)"
     secondary: "Mesh-Networking (Reticulum)"
+
+## ADDED Requirements
+
+### Requirement: i2s-ingestion
+The system MUST ingest audio data from the `/dev/forest_audio` device using the I2S protocol.
+
+#### Scenario: continuous-streaming
+- **WHEN** the system is in active state (5 seconds duty cycle)
+- **THEN** it reads 16,000 samples per second into the ring buffer
