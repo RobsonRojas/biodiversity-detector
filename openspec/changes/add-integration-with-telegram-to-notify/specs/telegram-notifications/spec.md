@@ -38,3 +38,16 @@ constraints:
   reliability:
     retry_strategy: "Exponential Backoff"
     offline_queuing: true   # Armazenar alertas se a conexão cair
+
+## ADDED Requirements
+
+### Requirement: telegram-alert-delivery
+The system MUST be able to send acoustic detection alerts to a configured Telegram chat using the Bot API.
+
+#### Scenario: successful-delivery
+- **WHEN** the system sends a valid HTTPS POST request to the Telegram API
+- **THEN** it receives a 200 OK response and the message is delivered
+
+#### Scenario: connectivity-fallback
+- **WHEN** the Telegram API is unreachable due to network issues
+- **THEN** the system MUST queue the alert locally and retry with exponential backoff
