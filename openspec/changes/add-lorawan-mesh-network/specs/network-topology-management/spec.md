@@ -29,3 +29,12 @@ node_roles:
 sync:
   accuracy_ms: 100
   drift_tolerance_ppm: 50
+
+## ADDED Requirements
+
+### Requirement: static-role-enforcement
+The system MUST enforce node roles (Leaf, Router, Gateway) as defined in the static configuration.
+
+#### Scenario: leaf-no-relay
+- **WHEN** a node configured as 'leaf' receives a packet for relay
+- **THEN** it MUST discard the packet and prioritize detection logic
