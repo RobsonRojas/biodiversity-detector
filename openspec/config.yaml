@@ -1,0 +1,58 @@
+version: "1.0.0"
+metadata:
+  name: "Patronos-Forest-Guardian"
+  version: "v1-alpha"
+  description: "Sistema de monitoramento acústico de baixo consumo para detecção de desmatamento."
+  author: "ARPT - Amazon Rainforest Protection"
+
+# Definição do Computador de Borda (Raspberry Pi Architecture)
+compute:
+  architecture: "aarch64"
+  platform: "raspberry-pi"
+  cpu:
+    clusters:
+      - cores: 4
+        type: "Cortex-A53"
+        max_frequency_mhz: 1200
+  memory:
+    total_mb: 512
+    type: "LPDDR2"
+
+# Definição do Sensor de Áudio (Exposto pelo Driver Rust)
+sensors:
+  - id: "i2s_mic_0"
+    type: "audio"
+    interface: "I2S"
+    driver: "rust_kernel_module_v1" # O driver que vamos escrever
+    device_path: "/dev/forest_audio"
+    capabilities:
+      sampling_rate_hz: 16000 # Otimizado para sons de baixa frequência (motoserras)
+      bit_depth: 24
+      channels: 1
+      buffer_size_kb: 64
+
+# Restrições de Energia (Crítico para operação solar/bateria)
+power_constraints:
+  max_power_mw: 500
+  sleep_modes:
+    - mode: "deep_sleep"
+      consumption_uw: 50
+      wake_up_time_ms: 1500
+  duty_cycle:
+    active_ms: 5000  # Escuta por 5 segundos
+    idle_ms: 55000   # Dorme por 55 segundos
+
+# Requisitos para o Modelo de IA (Edge Inference)
+ai_requirements:
+  framework: "tflite_micro"
+  precision: "int8" # Quantização obrigatória para baixo consumo
+  input_shape: [1, 16000, 1] # 1 segundo de áudio bruto
+  target_latency_ms: 300
+  min_confidence: 0.85
+
+# Interface de Saída (Comunicação de Longo Alcance)
+telemetry:
+  protocol: "lorawan"
+  region: "AU915" # Padrão usado no Brasil
+  mesh_support: true
+  alert_threshold: "critical" # Só envia se detectar motoserra
