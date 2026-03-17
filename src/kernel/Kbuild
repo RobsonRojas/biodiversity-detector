@@ -1,0 +1,4 @@
+# Kbuild for Guardian Audio Module
+
+obj-m += guardian_audio.o
+guardian_audio-y := module_guardian_audio.o
