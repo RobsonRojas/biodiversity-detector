@@ -18,6 +18,7 @@
 
 ## 4. Verification & Hardening
 
-- [ ] 4.1 Verify module loading/unloading without kernel panics.
+- [x] 4.1 Verify module loading/unloading without kernel panics.
 - [ ] 4.2 Use a scope/logic analyzer to verify I2S clock and data signals.
 - [ ] 4.3 Validate buffer synchronization with a test user-space application.
+- [x] 4.4 Implement and verify host simulation mode using custom device paths.

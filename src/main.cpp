@@ -44,13 +44,19 @@ void detection_loop(audio::AudioIn& audio_in, audio::CircularBuffer& buffer, ai:
     }
 }
 
-int main() {
-    audio::AudioIn audio_in;
+int main(int argc, char* argv[]) {
+    std::string device_path = "/dev/forest_audio";
+    if (argc > 1) {
+        device_path = argv[1];
+        std::cout << "[INFO] Using custom device path: " << device_path << std::endl;
+    }
+
+    audio::AudioIn audio_in(device_path);
     audio::CircularBuffer buffer(32000); // 2 seconds capacity
     ai::DetectionEngine engine;
 
     if (!audio_in.open()) {
-        std::cerr << "Failed to open audio device." << std::endl;
+        std::cerr << "Failed to open audio device: " << device_path << std::endl;
         return 1;
     }
 
