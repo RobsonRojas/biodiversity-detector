@@ -24,5 +24,5 @@ The system currently relies on user-space audio ingestion, which is prone to lat
 ## Risks / Trade-offs
 
 - **Toolchain Complexity**: Dependency on `rustc` and specific kernel configurations (`CONFIG_RUST=y`).
-- **Hardware Lock-in**: Direct register access might require different drivers for different RPi revisions (e.g., Pi Zero vs. Pi 4).
+- **Hardware Lock-in**: Direct register access requires specific mappings for the target RPi 3 BCM2837 SoC.
 - **Performance**: While zero-copy is efficient, the overhead of context switching for interrupts must be carefully managed to avoid power spikes.

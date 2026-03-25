@@ -1,0 +1,60 @@
+# Dockerfile.kernel-test
+# Environment for compiling and testing the Rust kernel module for RPi 3
+
+FROM ubuntu:24.04
+
+# Configuração de repositórios multi-arch para arm64
+RUN dpkg --add-architecture arm64 && \
+    rm -f /etc/apt/sources.list.d/ubuntu.sources && \
+    echo "Types: deb\n\
+URIs: http://archive.ubuntu.com/ubuntu/\n\
+Suites: noble noble-updates noble-backports\n\
+Components: main universe restricted multiverse\n\
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n\
+Architectures: amd64 i386" > /etc/apt/sources.list.d/amd64.sources && \
+    echo "Types: deb\n\
+URIs: http://ports.ubuntu.com/ubuntu-ports/\n\
+Suites: noble noble-updates noble-backports\n\
+Components: main universe restricted multiverse\n\
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n\
+Architectures: arm64" > /etc/apt/sources.list.d/arm64.sources
+
+# Instalação de dependências: GCC Cross, LLVM/Clang (necessário para Rust-for-Linux), e utilitários
+RUN apt-get update && apt-get install -y \
+    curl cmake git build-essential \
+    crossbuild-essential-arm64 g++-aarch64-linux-gnu \
+    bc bison flex libssl-dev make libc6-dev libncurses5-dev \
+    llvm lld clang \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalação do Rust e dependências (bindgen usa llvm)
+ENV RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH
+
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.78.0 && \
+    rustup target add aarch64-unknown-linux-gnu && \
+    rustup component add rust-src && \
+    cargo install --locked --version 0.65.1 bindgen-cli
+
+WORKDIR /usr/src
+
+# Clonar o kernel da Raspberry Pi (branch 6.6.y) - Shallow clone para economizar tempo/espaço
+RUN git clone --depth=1 --branch rpi-6.6.y https://github.com/raspberrypi/linux.git rpi-linux
+
+WORKDIR /usr/src/rpi-linux
+
+# Configurar o kernel para o BCM2837 (RPi 3) habilitando o Rust
+RUN make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- bcm2711_defconfig && \
+    # Habilitar Rust via script config do kernel
+    ./scripts/config --enable CONFIG_RUST && \
+    # Preparar headers e scripts necessários para compilação out-of-tree
+    make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 modules_prepare && \
+    # Compilar a infraestrutura base do Rust no kernel (core, alloc)
+    make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LLVM=1 rust
+
+WORKDIR /app
+COPY . /app/
+
+# O CMD padrão roda o script de teste
+CMD ["/bin/bash", "/app/scripts/test-kernel-module.sh"]

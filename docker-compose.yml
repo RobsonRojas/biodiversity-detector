@@ -1,0 +1,19 @@
+services:
+  kernel-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.kernel-test
+    volumes:
+      - .:/app
+    environment:
+      - CARGO_HOME=/usr/local/cargo
+    # The CMD in Dockerfile.kernel-test will run the test script
+
+  guardian-build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    environment:
+      - CMAKE_BUILD_PARALLEL_LEVEL=4

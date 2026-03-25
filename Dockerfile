@@ -47,12 +47,11 @@ RUN rm -rf build && mkdir build && cd build && \
     make -j$(nproc)
 
 # Compilar o módulo do kernel em Rust (Guardian Audio Module)
-# Nota: Requer headers do kernel aarch64 para gerar o .ko
-RUN cd src/kernel && \
-    KERNEL_DIR=$(ls -d /usr/src/linux-headers-*-generic | head -n 1) && \
-    make KERNEL_DIR=$KERNEL_DIR LLVM=1 || \
-    (echo "Aviso: Falha na compilação real. Gerando binário de teste." && \
-     gcc -shared -o guardian_audio.ko /dev/null)
+# O build real requer o kernel source do RPi inteiro configurado (feito no Dockerfile.kernel-test).
+# Aqui na imagem principal do app, apenas simulamos a presença do .ko para o app C++.
+RUN mkdir -p src/kernel && cd src/kernel && \
+    echo "Simulando guardian_audio.ko para build do node" && \
+    aarch64-linux-gnu-gcc -shared -o guardian_audio.ko /dev/null
 
 # Stage 2: Final Image
 FROM ubuntu:24.04

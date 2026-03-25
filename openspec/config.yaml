@@ -5,17 +5,19 @@ metadata:
   description: "Sistema de monitoramento acústico de baixo consumo para detecção de desmatamento."
   author: "ARPT - Amazon Rainforest Protection"
 
-# Definição do Computador de Borda (Raspberry Pi Architecture)
+# Definição do Computador de Borda (Raspberry Pi 3 Model B)
 compute:
   architecture: "aarch64"
-  platform: "raspberry-pi"
+  platform: "raspberry-pi-3b"
+  soc: "BCM2837"
+  peripheral_base: "0x3F000000"
   cpu:
     clusters:
       - cores: 4
         type: "Cortex-A53"
         max_frequency_mhz: 1200
   memory:
-    total_mb: 512
+    total_mb: 1024
     type: "LPDDR2"
 
 # Definição do Sensor de Áudio (Exposto pelo Driver Rust)

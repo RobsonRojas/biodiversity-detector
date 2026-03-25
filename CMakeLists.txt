@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # For this implementation, we assume tflite-micro headers are in include/tflite-micro
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# Optimization flags for Raspberry Pi Zero (aarch64)
+# Optimization flags for Raspberry Pi 3 Model B (BCM2837 aarch64)
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
     add_compile_options(-O3 -march=armv8-a+simd -mcpu=cortex-a53)
 endif()

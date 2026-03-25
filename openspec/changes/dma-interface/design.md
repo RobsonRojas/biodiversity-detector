@@ -11,7 +11,7 @@ The current `guardian_audio` kernel module reads samples from the I2S FIFO in an
 
 **Non-Goals:**
 - Implementing a generic DMA framework (this is specific to I2S).
-- Supporting older RPi models without the BCM2711/BCM2835 DMA controller.
+- Supporting older RPi models without the BCM2837/BCM2835 DMA controller.
 - Managing DMA for the LoRa/SPI interface.
 
 ## Decisions
