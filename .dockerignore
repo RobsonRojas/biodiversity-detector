@@ -1,0 +1,10 @@
+build/
+dist/
+.agent/
+.git/
+CMakeFiles/
+CMakeCache.txt
+*.ko
+*.o
+*.mod
+*.rlib

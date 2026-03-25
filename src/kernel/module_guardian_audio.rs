@@ -56,7 +56,7 @@ impl chrdev::RegistrationOps for GuardianAudioModule {
             let to_read = core::cmp::min(buffer.count(), DMA_BUFFER_SIZE / 2);
             
             // Safety: dma_buf is allocated via dma_alloc_coherent
-            let src = unsafe { (dma_buf as usize + offset) as *const u8 };
+            let src = (dma_buf as usize + offset) as *const u8;
             let slice = unsafe { core::slice::from_raw_parts(src, to_read) };
             
             buffer.copy_to_user(slice)?;
@@ -82,16 +82,14 @@ impl chrdev::RegistrationOps for GuardianAudioModule {
         // Task 3.2: Map the kernel ring buffer to user-space
         if _dev.dma_addr != 0 {
             let pfn = _dev.dma_addr >> kernel::bindings::PAGE_SHIFT;
-            unsafe {
-                if kernel::bindings::remap_pfn_range(
-                    vma.as_ptr(),
-                    vma.start(),
-                    pfn,
-                    (vma.end() - vma.start()) as u64,
-                    vma.page_prot()
-                ) != 0 {
-                    return Err(EAGAIN);
-                }
+            if kernel::bindings::remap_pfn_range(
+                vma.as_ptr(),
+                vma.start(),
+                pfn,
+                (vma.end() - vma.start()) as u64,
+                vma.page_prot()
+            ) != 0 {
+                return Err(EAGAIN);
             }
             Ok(())
         } else {
@@ -129,16 +127,9 @@ const CS_A_RXSYNC: u32 = 1 << 17;
 
 // MODE_A bits
 const MODE_A_CLK_DIS: u32 = 1 << 28;
-const MODE_A_PDMN: u32 = 1 << 27;
 const MODE_A_PDME: u32 = 1 << 26;
-const MODE_A_FRXP: u32 = 1 << 25;
-const MODE_A_FTXP: u32 = 1 << 24;
 const MODE_A_CLKM: u32 = 1 << 23;
-const MODE_A_CLKI: u32 = 1 << 22;
 const MODE_A_FSM: u32 = 1 << 21;
-const MODE_A_FSI: u32 = 1 << 20;
-const MODE_A_FLEN: u32 = 0x3FF << 10;
-const MODE_A_FSLEN: u32 = 0x3FF << 0;
 
 impl GuardianAudioModule {
     fn write_reg(&self, offset: usize, value: u32) {
@@ -276,6 +267,13 @@ impl kernel::Module for GuardianAudioModule {
     fn init(_name: &'static c_str, _module: &'static kernel::prelude::ThisModule) -> Result<Self> {
         pr_info!("Guardian Audio Module: Initializing (RPi 3 BCM2837 aarch64 with DMA support)\n");
         
+        // Task 1.1: Map I2S registers
+        pr_info!("Guardian Audio: Mapping I2S registers at 0x{:X}\n", I2S_BASE);
+        let i2s_regs = kernel::bindings::ioremap(I2S_BASE as u64, I2S_LEN as u64);
+        if i2s_regs.is_null() {
+            return Err(ENOMEM);
+        }
+
         let dev = chrdev::Registration::new_pinned::<Self>(
             c_str!("forest_audio"),
             0, // Minor number
@@ -290,12 +288,7 @@ impl kernel::Module for GuardianAudioModule {
 
         // Task 1.3: Request DMA channel
         pr_info!("Guardian Audio: Requesting DMA channel for I2S RX...\n");
-        // In a real RPi environment, we might need a specific master/slave ID
-        // For simplicity, we use dma_request_chan with a nullptr for device if it's a generic request
-        // but typically we'd use the platform device's dev.
-        // Since we don't have a platform device easily available here (it's a chrdev module),
-        // we use the bindings.
-        let dma_chan = unsafe { kernel::bindings::dma_request_chan(core::ptr::null_mut(), c_str!("rx").as_char_ptr()) };
+        let dma_chan = unsafe { kernel::bindings::dma_request_chan(core::ptr::null_mut(), c_str!("rx").as_ptr()) };
         if dma_chan.is_null() {
             pr_info!("Guardian Audio: Failed to request DMA channel (falling back to PIO not supported)\n");
             // Clean up i2s_regs before returning
@@ -306,18 +299,16 @@ impl kernel::Module for GuardianAudioModule {
         // Task 1.4: Allocate coherent DMA buffer
         pr_info!("Guardian Audio: Allocating 64KB coherent DMA buffer...\n");
         let mut dma_addr: kernel::bindings::dma_addr_t = 0;
-        let dma_buffer = unsafe { 
-            kernel::bindings::dma_alloc_coherent(
-                core::ptr::null_mut(), // Should be device->dev
-                DMA_BUFFER_SIZE as u64,
-                &mut dma_addr,
-                0 // GFP_KERNEL is usually implicitly handled or passed as bitmask
-            ) 
-        };
+        let dma_buffer = kernel::bindings::dma_alloc_coherent(
+            core::ptr::null_mut(), // Should be device->dev
+            DMA_BUFFER_SIZE as u64,
+            &mut dma_addr,
+            0 // GFP_KERNEL is usually implicitly handled or passed as bitmask
+        );
 
         if dma_buffer.is_null() {
             kernel::bindings::dma_release_channel(dma_chan);
-            unsafe { kernel::bindings::iounmap(i2s_regs) };
+            kernel::bindings::iounmap(i2s_regs);
             return Err(ENOMEM);
         }
 
@@ -343,23 +334,21 @@ impl Drop for GuardianAudioModule {
         // Task 3.3 & 1.3: Clean DMA channel release
         if let Some(chan) = self.dma_chan {
             pr_info!("Guardian Audio: Releasing DMA channel...\n");
-            unsafe { kernel::bindings::dma_release_channel(chan) };
+            kernel::bindings::dma_release_channel(chan);
         }
         if let Some(buf) = self.dma_buffer {
             pr_info!("Guardian Audio: Freeing coherent DMA buffer...\n");
-            unsafe {
-                kernel::bindings::dma_free_coherent(
-                    core::ptr::null_mut(),
-                    DMA_BUFFER_SIZE as u64,
-                    buf,
-                    self.dma_addr
-                )
-            };
+            kernel::bindings::dma_free_coherent(
+                core::ptr::null_mut(),
+                DMA_BUFFER_SIZE as u64,
+                buf,
+                self.dma_addr
+            );
         }
         // Task 3.3: Unmap I2S registers
         if let Some(regs) = self.i2s_regs {
             pr_info!("Guardian Audio: Unmapping I2S registers...\n");
-            unsafe { kernel::bindings::iounmap(regs) };
+            kernel::bindings::iounmap(regs);
         }
     }
 }

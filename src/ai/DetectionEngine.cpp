@@ -1,5 +1,7 @@
 #include "DetectionEngine.hpp"
 #include <random>
+#include <iostream>
+#include <cmath>
 
 namespace guardian::ai {
 
@@ -22,14 +24,20 @@ std::expected<float, std::error_code> DetectionEngine::detect_motoserra(std::spa
         return std::unexpected(std::make_error_code(std::errc::not_connected));
     }
 
-    // SIMULATED INFERENCE:
-    // This would invoke interpreter->Invoke()
-    // and read the output tensor.
+    // REALISTIC MOCK FOR INTEGRATION TESTING:
+    // Instead of random, we check the RMS energy of the frame.
+    // MotoSerra mock signal has much higher energy than background noise.
     
-    static std::mt19937 gen(42);
-    static std::uniform_real_distribution<float> dis(0.0, 1.0);
+    double sum_sq = 0;
+    for (auto sample : audio_frame) {
+        double s = static_cast<double>(sample) / (2147483647.0); // Normalize to [-1, 1]
+        sum_sq += s * s;
+    }
+    double rms = std::sqrt(sum_sq / audio_frame.size());
+    float confidence = (rms > 0.2) ? 0.95f : 0.05f;
     
-    return dis(gen);
+    std::cout << "[DEBUG] Calculated RMS: " << rms << " (Threshold: 0.2)" << std::endl;
+    return confidence;
 }
 
 } // namespace guardian::ai

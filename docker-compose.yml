@@ -17,3 +17,8 @@ services:
       - .:/app
     environment:
       - CMAKE_BUILD_PARALLEL_LEVEL=4
+
+  integration-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.integration-test
