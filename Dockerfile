@@ -1,40 +1,21 @@
-# Stage 1: Build C++ and Rust projects
-FROM ubuntu:24.04 AS builder
+# --- Stage 1: Build C++ and RPi Rust ---
+FROM ubuntu:24.04 AS builder-rpi
 
-# Configuração de repositórios multi-arch para permitir instalação de pacotes arm64 no host amd64
+# Configuração de repositórios multi-arch
 RUN dpkg --add-architecture arm64 && \
-    rm /etc/apt/sources.list.d/ubuntu.sources && \
-    echo "Types: deb\n\
-URIs: http://archive.ubuntu.com/ubuntu/\n\
-Suites: noble noble-updates noble-backports\n\
-Components: main universe restricted multiverse\n\
-Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n\
-Architectures: amd64 i386" > /etc/apt/sources.list.d/amd64.sources && \
-    echo "Types: deb\n\
-URIs: http://ports.ubuntu.com/ubuntu-ports/\n\
-Suites: noble noble-updates noble-backports\n\
-Components: main universe restricted multiverse\n\
-Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n\
-Architectures: arm64" > /etc/apt/sources.list.d/arm64.sources
-
-# Instalação de dependências: Clang, GCC Cross, Kernel Headers e Rust
-RUN apt-get update && apt-get install -y \
+    apt-get update && apt-get install -y \
     curl cmake git build-essential \
     crossbuild-essential-arm64 g++-aarch64-linux-gnu qemu-user-static \
-    linux-headers-generic:arm64
+    linux-headers-generic:arm64 \
+    libcurl4-openssl-dev:arm64
 
-# Instalação do Rust e adição do target em uma única camada
+# Instalação do Rust para RPi
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable && \
     . "$HOME/.cargo/env" && \
     rustup target add aarch64-unknown-linux-gnu
 
-# Garante que o PATH esteja disponível
 ENV PATH="/root/.cargo/bin:${PATH}"
-
-# Define o diretório de trabalho
 WORKDIR /app
-
-# Copia todo o código fonte
 COPY . .
 
 # Compilar o projeto C++ (GuardianEdgeAI)
@@ -46,19 +27,54 @@ RUN rm -rf build && mkdir build && cd build && \
           .. && \
     make -j$(nproc)
 
-# Compilar o módulo do kernel em Rust (Guardian Audio Module)
-# O build real requer o kernel source do RPi inteiro configurado (feito no Dockerfile.kernel-test).
-# Aqui na imagem principal do app, apenas simulamos a presença do .ko para o app C++.
-RUN mkdir -p src/kernel && cd src/kernel && \
-    echo "Simulando guardian_audio.ko para build do node" && \
-    aarch64-linux-gnu-gcc -shared -o guardian_audio.ko /dev/null
+# --- Stage 2: Build ESP32 Rust ---
+FROM ubuntu:24.04 AS builder-esp32
 
-# Stage 2: Final Image
+RUN apt-get update && apt-get install -y \
+    curl git python3 python3-pip python3-venv \
+    libusb-1.0-0-dev libssl-dev pkg-config
+
+# Instalação do Rust e ferramenta espup
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Setup toolchain ESP32 (simulado para build em contêiner)
+RUN cargo install ldproxy espup cargo-espflash && \
+    espup install --targets esp32s3
+
+WORKDIR /app
+COPY src/esp32/ src/esp32/
+WORKDIR /app/src/esp32
+# Nota: Build real requer ambiente espup source
+RUN /bin/bash -c "source $HOME/export-esp.sh && cargo build --release"
+
+# --- Stage 3: Build Web Frontend ---
+FROM node:20 AS builder-web-frontend
+WORKDIR /app/frontend
+COPY src/web-manager/frontend/package*.json ./
+RUN npm install
+COPY src/web-manager/frontend/ .
+RUN npm run build
+
+# --- Stage 4: Final Image ---
 FROM ubuntu:24.04
 WORKDIR /app
-# Copia especificamente os arquivos desejados para a imagem final
-COPY --from=builder /app/build/guardian_node /app/guardian_node
-COPY --from=builder /app/src/kernel/guardian_audio.ko /app/guardian_audio.ko
 
+# Dependências de runtime para o backend Python e o app C++
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip python3-venv \
+    libcurl4 qemu-user-static
+
+# Copia os binários do RPi
+COPY --from=builder-rpi /app/build/guardian_node /app/guardian_node
+# Copia o firmware do ESP32 como artefato
+COPY --from=builder-esp32 /app/src/esp32/target/xtensa-esp32s3-espidf/release/esp32 /app/dist/esp32.bin
+
+# Copia o Web Manager (Frontend estático e Backend)
+COPY --from=builder-web-frontend /app/frontend/out /app/web/frontend
+COPY src/web-manager/backend /app/web/backend
+RUN pip3 install --no-cache-dir -r /app/web/backend/requirements.txt --break-system-packages
+
+EXPOSE 8000
 CMD ["./guardian_node"]
 
