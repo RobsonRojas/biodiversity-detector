@@ -9,6 +9,8 @@ interface Detection {
   id: string;
   node_id: string;
   confidence: number;
+  battery_mv: number;
+  last_rssi: number;
   pushed_at: string;
 }
 
@@ -53,13 +55,15 @@ const DetectionTable = () => {
           <TableRow>
             <TableCell>Source</TableCell>
             <TableCell>Confidence</TableCell>
+            <TableCell>Battery</TableCell>
+            <TableCell>RSSI</TableCell>
             <TableCell>Time</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {detections.length === 0 ? (
              <TableRow>
-               <TableCell colSpan={3} align="center">
+               <TableCell colSpan={5} align="center">
                  <Typography variant="body2" sx={{ py: 2, color: 'text.secondary' }}>
                    No detections reported yet
                  </Typography>
@@ -75,6 +79,16 @@ const DetectionTable = () => {
                     color={d.confidence > 0.9 ? 'error' : 'warning'}
                     size="small"
                   />
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" color={d.battery_mv < 3700 ? 'error' : 'inherit'}>
+                    {d.battery_mv}mV
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" color={d.last_rssi < -110 ? 'error' : 'inherit'}>
+                    {d.last_rssi}dBm
+                  </Typography>
                 </TableCell>
                 <TableCell>{new Date(d.pushed_at).toLocaleTimeString()}</TableCell>
               </TableRow>

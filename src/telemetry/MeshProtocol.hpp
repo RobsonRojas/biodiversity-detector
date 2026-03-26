@@ -16,7 +16,9 @@ namespace guardian::telemetry {
 struct MeshHeader {
     uint16_t target_id;
     uint16_t sender_id;
-    uint16_t prev_hop_id; // Added for loop prevention
+    uint16_t prev_hop_id;
+    uint16_t battery_mv; // Diagnostic: battery voltage
+    int8_t last_rssi;    // Diagnostic: RSSI of previous hop
     uint8_t hop_limit;
     uint8_t payload_len;
     uint16_t signature; // simplified signature for demo
