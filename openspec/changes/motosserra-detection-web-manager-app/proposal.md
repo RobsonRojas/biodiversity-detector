@@ -4,10 +4,10 @@ Managing a decentralized network of Guardian nodes in a forest environment is cu
 
 ## What Changes
 
-- **Centralized Dashboard**: A web-based interface for real-time monitoring of all Guardian nodes (Leaf, Router, Gateway).
-- **Network Topology Visualization**: An interactive map and graph view showing node connections, signal strength (RSSI), and battery levels.
-- **Remote Configuration API**: A backend service to push configuration updates (e.g., detection thresholds, sleep intervals) from the web app through the Gateway into the mesh network.
-- **Data Persistence Layer**: Migration of detection events from ephemeral logs to a persistent database for historical analysis and reporting.
+- **Centralized Dashboard**: A React-based web interface using Material UI for a professional, responsive monitoring experience.
+- **Serverless Backend**: Utilization of Supabase and Supabase Edge Functions for real-time data ingestion, authentication, and logic.
+- **Vercel Deployment**: Optimized configuration for seamless deployment to Vercel's edge network.
+- **Data Persistence Layer**: Migration of detection events to Supabase PostgreSQL for historical analysis and reporting.
 
 ## Capabilities
 

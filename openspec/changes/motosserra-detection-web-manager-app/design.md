@@ -17,11 +17,13 @@ The Guardian system needs a sophisticated management interface to transition fro
 
 ## Decisions
 
-- **Framework**: **Next.js (App Router)**. Rationale: Provides a professional-grade SEO-ready foundation with excellent developer experience for building complex dashboards.
-- **Styling**: **TailwindCSS with Shadcn/UI**. Rationale: Enables rapid development of a premium-feeling, responsive, and accessible interface.
-- **State Management**: **React Query (TanStack Query)**. Rationale: Ideal for handling server-state, caching, and background synchronization with the Guardian API.
-- **Backend API**: **FastAPI (Python)**. Rationale: Highly performant, easy to containerize, and has excellent libraries for geographic data (GeoAlchemy2) and real-time communication (WebSockets).
-- **Network-Gateway Bridge**: **MQTT**. Rationale: The Gateway will act as an MQTT client, publishing mesh status updates and subscribing to configuration change topics. This decouples the web app from the physical LoRa network constraints.
+- **Framework**: **Vite + React**. Rationale: Provides a faster development cycle and more flexibility for standard React SPAs compared to Next.js when SSR is not required.
+- **Routing**: **React Router**. Rationale: Industry standard for client-side routing in React applications, allowing for complex nested layouts and navigation.
+- **Styling**: **Material UI (MUI)**. Rationale: Requirement for a robust, component-driven design system with built-in accessibility and a professional look.
+- **Data Layer**: **Supabase**. Rationale: Provides managed PostgreSQL, Authentication, and Realtime subscriptions out-of-the-box, significantly reducing backend overhead.
+- **Business Logic**: **Supabase Edge Functions (Deno/TypeScript)**. Rationale: Scalable, serverless logic for processing mesh gateway events and configuration broadcasts.
+- **Deployment**: **Vercel**. Rationale: Native support for Next.js, providing instant deployments and edge performance.
+- **Network-Gateway Bridge**: **Edge Function Webhooks**. Rationale: The Gateway will post mesh updates directly to a Supabase Edge Function via HTTPS, which then updates the DB and triggers real-time UI refreshes.
 
 ## Risks / Trade-offs
 

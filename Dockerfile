@@ -48,7 +48,7 @@ WORKDIR /app/src/esp32
 # Nota: Build real requer ambiente espup source
 RUN /bin/bash -c "source $HOME/export-esp.sh && cargo build --release"
 
-# --- Stage 3: Build Web Frontend ---
+# --- Stage 3: Build Web Frontend (Vite) ---
 FROM node:20 AS builder-web-frontend
 WORKDIR /app/frontend
 COPY src/web-manager/frontend/package*.json ./
@@ -60,21 +60,19 @@ RUN npm run build
 FROM ubuntu:24.04
 WORKDIR /app
 
-# Dependências de runtime para o backend Python e o app C++
+# Dependências de runtime para o app C++
 RUN apt-get update && apt-get install -y \
-    python3 python3-pip python3-venv \
-    libcurl4 qemu-user-static
+    libcurl4 qemu-user-static \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copia os binários do RPi
 COPY --from=builder-rpi /app/build/guardian_node /app/guardian_node
 # Copia o firmware do ESP32 como artefato
 COPY --from=builder-esp32 /app/src/esp32/target/xtensa-esp32s3-espidf/release/esp32 /app/dist/esp32.bin
 
-# Copia o Web Manager (Frontend estático e Backend)
-COPY --from=builder-web-frontend /app/frontend/out /app/web/frontend
-COPY src/web-manager/backend /app/web/backend
-RUN pip3 install --no-cache-dir -r /app/web/backend/requirements.txt --break-system-packages
+# Copia o Web Manager (Static Frontend - Vite dist)
+COPY --from=builder-web-frontend /app/frontend/dist /app/web/frontend
 
-EXPOSE 8000
+EXPOSE 80
 CMD ["./guardian_node"]
 

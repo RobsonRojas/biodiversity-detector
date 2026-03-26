@@ -14,6 +14,9 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
     add_compile_options(-O3 -march=armv8-a+simd -mcpu=cortex-a53)
 endif()
 
+# External Dependencies
+find_package(CURL REQUIRED)
+
 # Core Guarding Logic
 add_library(GuardianCore
     src/audio/AudioIn.cpp
@@ -24,6 +27,7 @@ add_library(GuardianCore
     src/telemetry/ConfigParser.cpp
     src/telemetry/TelegramClient.cpp
 )
+target_link_libraries(GuardianCore PUBLIC CURL::libcurl)
 
 # Main Application
 add_executable(guardian_node src/main.cpp)
