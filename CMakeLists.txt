@@ -19,6 +19,10 @@ add_library(GuardianCore
     src/audio/AudioIn.cpp
     src/ai/DetectionEngine.cpp
     src/AlertManager.cpp
+    src/telemetry/LoRaDriver.cpp
+    src/telemetry/MeshProtocol.cpp
+    src/telemetry/ConfigParser.cpp
+    src/telemetry/TelegramClient.cpp
 )
 
 # Main Application
