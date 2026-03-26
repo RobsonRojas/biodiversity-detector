@@ -61,13 +61,22 @@ public:
                     pkt->header.hop_limit--;
                     auto next_hop = config_.route_manager.get_next_hop(pkt->header.target_id);
                     
-                    if (next_hop && *next_hop == pkt->header.prev_hop_id) {
-                         return;
-                    }
+                    if (next_hop) {
+                        std::cout << "[Mesh] Routing to 0x" << std::hex << pkt->header.target_id 
+                                  << " via next_hop 0x" << *next_hop 
+                                  << " (prev: 0x" << pkt->header.prev_hop_id << ")" << std::dec << std::endl;
+                        
+                        if (*next_hop == pkt->header.prev_hop_id) {
+                            std::cout << "[Mesh] Split-horizon drop.\n";
+                            return;
+                        }
 
-                    if (next_hop && lora_) {
-                        pkt->header.prev_hop_id = config_.node_id;
-                        lora_->send(pkt->serialize());
+                        if (lora_) {
+                            pkt->header.prev_hop_id = config_.node_id;
+                            lora_->send(pkt->serialize());
+                        }
+                    } else {
+                        std::cout << "[Mesh] No route for 0x" << std::hex << pkt->header.target_id << std::dec << std::endl;
                     }
                 }
             }

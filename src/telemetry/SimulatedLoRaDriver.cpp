@@ -11,19 +11,8 @@
 
 namespace guardian::telemetry {
 
-SimulatedLoRaDriver::SimulatedLoRaDriver() : sock_fd_(-1) {
-    const char* port_env = std::getenv("SIM_LORA_PORT");
-    port_ = port_env ? std::atoi(port_env) : 5000;
-
-    const char* neighbors_env = std::getenv("SIM_LORA_NEIGHBORS");
-    if (neighbors_env) {
-        std::stringstream ss(neighbors_env);
-        std::string neighbor;
-        while (std::getline(ss, neighbor, ',')) {
-            neighbors_.push_back(neighbor);
-        }
-    }
-}
+SimulatedLoRaDriver::SimulatedLoRaDriver(int port, const std::vector<std::string>& neighbors) 
+    : sock_fd_(-1), port_(port), neighbors_(neighbors) {}
 
 SimulatedLoRaDriver::~SimulatedLoRaDriver() {
     if (sock_fd_ != -1) {
@@ -62,8 +51,10 @@ std::expected<void, std::error_code> SimulatedLoRaDriver::send(std::span<const u
         if (he) {
             memcpy(&dest.sin_addr, he->h_addr_list[0], he->h_length);
             ssize_t sent = sendto(sock_fd_, data.data(), data.size(), 0, (const struct sockaddr *)&dest, sizeof(dest));
-            if (sent < 0) {
-                std::cerr << "[SimulatedLoRa] Failed to send to " << neighbor << ": " << strerror(errno) << "\n";
+            if (sent >= 0) {
+                std::cout << "[SimulatedLoRa] SENT " << sent << " bytes to " << neighbor << std::endl;
+            } else {
+                std::cerr << "[SimulatedLoRa] Failed to send to " << neighbor << ": " << strerror(errno) << std::endl;
             }
         } else {
             std::cerr << "[SimulatedLoRa] Could not resolve neighbor: " << neighbor << "\n";
@@ -77,14 +68,15 @@ std::expected<size_t, std::error_code> SimulatedLoRaDriver::receive(std::span<ui
 
     struct sockaddr_in src;
     socklen_t len = sizeof(src);
-    ssize_t n = recvfrom(sock_fd_, buffer.data(), buffer.size(), 0, (struct sockaddr *)&src, &len);
+    ssize_t n = recvfrom(sock_fd_, buffer.data(), buffer.size_bytes(), 0, (struct sockaddr *)&src, &len);
     
-    if (n < 0) {
+    if (n >= 0) {
+        char sender_ip[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &src.sin_addr, sender_ip, INET_ADDRSTRLEN);
+        std::cout << "[SimulatedLoRa] RECV " << n << " bytes from " << sender_ip << std::endl;
+    } else {
         return std::unexpected(std::make_error_code(std::errc::io_error));
     }
-
-    char sender_ip[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &src.sin_addr, sender_ip, INET_ADDRSTRLEN);
 
     return static_cast<size_t>(n);
 }

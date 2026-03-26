@@ -4,11 +4,12 @@
 #include <iostream>
 #include <cstdlib>
 #include <sstream>
+#include <vector>
 
 namespace guardian::telemetry {
 
 NodeConfig ConfigParser::parse_from_env() {
-    NodeConfig config;
+    NodeConfig config(0);
 
     // 1. Basic Identifiers
     const char* node_id_env = getenv("NODE_ID");
@@ -45,10 +46,14 @@ NodeConfig ConfigParser::parse_from_env() {
         config.driver = std::make_shared<PhysicalLoRaDriver>(spi_dev, 8, 24, 25, 17); 
     } else {
         uint16_t sim_port = getenv("SIM_LORA_PORT") ? static_cast<uint16_t>(std::stoul(getenv("SIM_LORA_PORT"))) : 5000;
-        std::vector<uint16_t> neighbors;
+        std::vector<std::string> neighbors;
         const char* neigh_env = getenv("SIM_LORA_NEIGHBORS");
         if (neigh_env) {
-             // Neighbors are hostnames for simulation, but for simplicity we'll logic it in SimulatedLoRaDriver
+            std::stringstream ss(neigh_env);
+            std::string n;
+            while (std::getline(ss, n, ',')) {
+                if (!n.empty()) neighbors.push_back(n);
+            }
         }
         config.driver = std::make_shared<SimulatedLoRaDriver>(sim_port, neighbors);
     }

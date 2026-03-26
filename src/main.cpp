@@ -8,7 +8,7 @@
 #include "AlertManager.hpp"
 #include "telemetry/ConfigParser.hpp"
 #include "telemetry/LoRaDriver.hpp"
-#include "telemetry/SimulatedLoRaDriver.hpp"
+#include "telemetry/LoRaDriver.hpp"
 #include "telemetry/SupabaseClient.hpp"
 #include <atomic>
 #include <cstdlib>
@@ -96,19 +96,19 @@ int main(int argc, char* argv[]) {
         std::cout << "[INFO] Using custom device path: " << device_path << std::endl;
     }
 
-    auto config = telemetry::ConfigParser::parse_static_config("config.yaml");
+    auto config = telemetry::ConfigParser::parse_from_env();
+    auto lora = config.driver;
     
-    std::shared_ptr<telemetry::LoRaDriver> lora;
-    const char* use_sim = std::getenv("USE_SIM_LORA");
-    if (use_sim && std::string(use_sim) == "1") {
-        std::cout << "[INFO] Using Simulated LoRa Driver (UDP)" << std::endl;
-        lora = std::make_shared<telemetry::SimulatedLoRaDriver>();
-    } else {
-        std::cout << "[INFO] Using Physical LoRa Driver (SX1262)" << std::endl;
-        lora = std::make_shared<telemetry::LoRaDriver>();
+    if (!lora) {
+        std::cerr << "[ERROR] No LoRa driver configured!" << std::endl;
+        return 1;
     }
-    
-    lora->initialize();
+
+    if (auto init_res = lora->initialize(); !init_res) {
+        std::cerr << "[ERROR] Failed to initialize LoRa driver: " << init_res.error().message() << std::endl;
+        // Don't return 1 here if we want to support partial starts, but for now let's be strict
+        return 1;
+    }
     
     // Client and queue could be properly initialized if needed
     auto client = std::make_shared<telemetry::TelegramClient>(telemetry::TelegramConfig{"dummy", "dummy"});
@@ -129,7 +129,8 @@ int main(int argc, char* argv[]) {
 
     if (!audio_in.open()) {
         std::cerr << "Failed to open audio device: " << device_path << std::endl;
-        if (!use_sim || std::string(use_sim) != "1") {
+        const char* lora_driver = std::getenv("LORA_DRIVER");
+        if (lora_driver && std::string(lora_driver) == "physical") {
             return 1;
         }
         std::cout << "[SIM] Continuing without physical audio device..." << std::endl;

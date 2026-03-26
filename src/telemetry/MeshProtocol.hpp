@@ -13,6 +13,7 @@
 
 namespace guardian::telemetry {
 
+#pragma pack(push, 1)
 struct MeshHeader {
     uint16_t target_id;
     uint16_t sender_id;
@@ -23,6 +24,7 @@ struct MeshHeader {
     uint8_t payload_len;
     uint16_t signature; // simplified signature for demo
 };
+#pragma pack(pop)
 
 class MeshPacket {
 public:
