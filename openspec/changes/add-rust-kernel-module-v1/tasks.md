@@ -10,11 +10,12 @@
 - [ ] 2.2 Implement the `file_operations` for `open`, `release`, and `read`.
 - [ ] 2.3 Create the `/dev/forest_audio` node with correct permissions.
 
-## 3. Shared Memory & I2S Logic
+## 3. Real Hardware I2S & DMA Logic
 
-- [ ] 3.1 Implement the `mmap` kernel logic for the shared ring buffer.
-- [ ] 3.2 Configure the SoC I2S controller registers (16kHz, 32-bit MONO).
-- [ ] 3.3 Implement the interrupt handler to populate the buffer from the I2S FIFO.
+- [x] 3.1 Implement BCM2837 Register Mappings for PCM and DMA.
+- [x] 3.2 Configure DMA Channel 2 for PCM-to-Ring-Buffer transfers.
+- [x] 3.3 Implement the `mmap` kernel logic for zero-copy shared memory.
+- [x] 3.4 Implement hardware interrupt handler for buffer boundaries.
 
 ## 4. Verification & Hardening
 

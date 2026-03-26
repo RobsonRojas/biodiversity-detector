@@ -12,6 +12,9 @@ use core::pin::Pin;
 use kernel::{chrdev, file, mm, iov_iter, c_str, pr_info, bindings};
 use kernel::error::code::*;
 
+mod bcm2837_regs;
+use bcm2837_regs::{pcm, dma};
+
 const DMA_BUFFER_SIZE: usize = 64 * 1024;
 
 module! {
@@ -98,21 +101,9 @@ impl chrdev::RegistrationOps for GuardianAudioModule {
     }
 }
 
-// Task 3.2: I2S Controller Register Definitions (BCM2837 - RPi 3)
 // BCM2837 peripheral base: 0x3F000000 + I2S offset: 0x203000
-const I2S_BASE: usize = 0x3F203000;
+const I2S_BASE: usize = bcm2837_regs::BCM2837_PERI_BASE + pcm::BASE_OFFSET;
 const I2S_LEN: usize = 0x24; // Range of registers
-
-// Register Offsets
-const CS_A: usize = 0x00;
-const FIFO_A: usize = 0x04;
-const MODE_A: usize = 0x08;
-const RXC_A: usize = 0x0C;
-const TXC_A: usize = 0x10;
-const DREQ_A: usize = 0x14;
-const INTEN_A: usize = 0x18;
-const INTSTC_A: usize = 0x1C;
-const GRAY_A: usize = 0x20;
 
 // CS_A bits
 const CS_A_EN: u32 = 1 << 0;
@@ -154,28 +145,25 @@ impl GuardianAudioModule {
         pr_info!("Guardian Audio: Configuring I2S for 16kHz/32-bit MONO with DMA DREQ\n");
         
         // 1. Clear FIFOs and reset CS_A
-        self.write_reg(CS_A, CS_A_RXCLR | CS_A_TXCLR);
+        self.write_reg(pcm::CS_A, CS_A_RXCLR | CS_A_TXCLR);
         
         // 2. Configure MODE_A: 16kHz/32-bit settings
-        // For 16kHz with RPi clocking, we need specific FLEN/FSLEN
-        // Assuming BCM2837 PCM clock is set externally or using default 19.2MHz
-        // Here we just set the bits as per specification
-        let mut mode = self.read_reg(MODE_A);
-        mode |= MODE_A_CLKM | MODE_A_FSM; // Master mode, Frame Sync Master
-        mode &= !MODE_A_CLK_DIS;          // Enable clock
-        self.write_reg(MODE_A, mode);
+        let mut mode = self.read_reg(pcm::MODE_A);
+        mode |= 1 << 23 | 1 << 21; // Master mode, Frame Sync Master (Simpler bitwise)
+        mode &= !(1 << 28);        // Enable clock
+        self.write_reg(pcm::MODE_A, mode);
 
         // 3. Configure RXC_A: 32-bit MONO
         let rxc = 0x1F << 20 | 0x01 << 16; // 32-bit width, 1st channel
-        self.write_reg(RXC_A, rxc);
+        self.write_reg(pcm::RXC_A, rxc);
 
         // 4. Enable DMA DREQ signaling
-        let mut cs = self.read_reg(CS_A);
+        let mut cs = self.read_reg(pcm::CS_A);
         cs |= CS_A_DMAEN | CS_A_EN | CS_A_RXON;
-        self.write_reg(CS_A, cs);
+        self.write_reg(pcm::CS_A, cs);
 
         pr_info!("Guardian Audio: I2S DREQ enabled (CS_A: 0x{:X}, MODE_A: 0x{:X})\n", 
-                 self.read_reg(CS_A), self.read_reg(MODE_A));
+                 self.read_reg(pcm::CS_A), self.read_reg(pcm::MODE_A));
     }
 
     // Task 3.2: Start DMA transfer
@@ -187,7 +175,7 @@ impl GuardianAudioModule {
                 // Task 2.1: Configure DMA slave
                 let mut config: kernel::bindings::dma_slave_config = core::mem::zeroed();
                 config.direction = kernel::bindings::dma_transfer_direction_DMA_DEV_TO_MEM;
-                config.src_addr = (I2S_BASE + FIFO_A) as u64;
+                config.src_addr = (I2S_BASE + pcm::FIFO_A) as u64;
                 config.src_addr_width = kernel::bindings::dma_slave_buswidth_DMA_SLAVE_BUSWIDTH_4_BYTES;
                 config.src_maxburst = 1;
 
