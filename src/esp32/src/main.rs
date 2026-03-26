@@ -1,6 +1,7 @@
 pub mod audio_i2s;
 pub mod circular_buffer;
 pub mod lora_driver;
+pub mod mesh_protocol;
 pub mod detection_engine;
 
 use esp_idf_hal::peripherals::Peripherals;
@@ -44,7 +45,7 @@ fn main() -> anyhow::Result<()> {
 
     // Thread 2: Inference & LoRa (Core 1)
     let buffer_inference = buffer.clone();
-    let lora = Arc::new(Mutex::new(LoRaDriver::new(peripherals.clone())?));
+    let lora = Arc::new(Mutex::new(LoRaDriver::new(peripherals)?));
     lora.lock().unwrap().initialize()?;
 
     let engine = DetectionEngine::new("motoserra_detect_v1.tflite")?;
@@ -66,9 +67,12 @@ fn main() -> anyhow::Result<()> {
                 if let Ok(confidence) = engine.detect_motoserra(&inference_frame) {
                     if confidence > 0.85 {
                         log::info!("[MAIN] Chainsaw Detected! Confidence: {:.2}", confidence);
-                        let alert = format!("ALERT: Chainsaw detected by ESP32 node. Confidence: {:.2}", confidence);
+                        
+                        let mut header = mesh_protocol::MeshHeader::new(0x0E32, 0x0005, 3950, -85);
+                        header.data_len = 0; // Alert is signaling by presence in this context
+                        
                         let mut l = lora.lock().unwrap();
-                        let _ = l.send(alert.as_bytes());
+                        let _ = l.send(header.as_bytes());
                     }
                 }
             }
@@ -77,11 +81,15 @@ fn main() -> anyhow::Result<()> {
         }
     });
 
+    let lora_heartbeat = lora.clone();
     loop {
-        // Simple periodic sleep for demonstration (Task 4.4)
-        log::info!("[MAIN] Entering 55s Sleep Phase...");
-        thread::sleep(Duration::from_secs(55));
-        log::info!("[MAIN] Waking up for 5s Active Phase...");
-        thread::sleep(Duration::from_secs(5));
+        {
+            let mut l = lora_heartbeat.lock().unwrap();
+            let header = mesh_protocol::MeshHeader::new(0x0E32, 0x0005, 4120, -78);
+            log::info!("[HEARTBEAT] Sending Mesh Heartbeat (Bat: 4120mV, RSSI: -78dBm)...");
+            let _ = l.send(header.as_bytes());
+        }
+        
+        thread::sleep(Duration::from_secs(30));
     }
 }
