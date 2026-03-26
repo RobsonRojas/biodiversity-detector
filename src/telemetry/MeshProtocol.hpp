@@ -2,10 +2,10 @@
 
 #include <cstdint>
 #include <vector>
-#include <span>
 #include <map>
 #include <string>
 #include <optional>
+#include "../utils/compat.hpp"
 
 #if __has_include(<flat_map>)
 #include <flat_map>
@@ -16,6 +16,7 @@ namespace guardian::telemetry {
 struct MeshHeader {
     uint16_t target_id;
     uint16_t sender_id;
+    uint16_t prev_hop_id; // Added for loop prevention
     uint8_t hop_limit;
     uint8_t payload_len;
     uint16_t signature; // simplified signature for demo

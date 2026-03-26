@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  node5_gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.sim
+    container_name: node5
+    environment:
+      - NODE_ID=0x0005
+      - NODE_ROLE=Gateway
+      - SIM_LORA_NEIGHBORS=node4
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+    networks:
+      mesh_net:
+        ipv4_address: 172.20.0.6
+
+  node4_router:
+    build:
+      context: .
+      dockerfile: Dockerfile.sim
+    container_name: node4
+    environment:
+      - NODE_ID=0x0004
+      - NODE_ROLE=Router
+      - SIM_LORA_NEIGHBORS=node3,node5
+      - STATIC_ROUTES=0x0005:0x0005
+    networks:
+      mesh_net:
+        ipv4_address: 172.20.0.5
+
+  node3_router:
+    build:
+      context: .
+      dockerfile: Dockerfile.sim
+    container_name: node3
+    environment:
+      - NODE_ID=0x0003
+      - NODE_ROLE=Router
+      - SIM_LORA_NEIGHBORS=node2,node4
+      - STATIC_ROUTES=0x0005:0x0004
+    networks:
+      mesh_net:
+        ipv4_address: 172.20.0.4
+
+  node2_router:
+    build:
+      context: .
+      dockerfile: Dockerfile.sim
+    container_name: node2
+    environment:
+      - NODE_ID=0x0002
+      - NODE_ROLE=Router
+      - SIM_LORA_NEIGHBORS=node1,node3
+      - STATIC_ROUTES=0x0005:0x0003
+    networks:
+      mesh_net:
+        ipv4_address: 172.20.0.3
+
+  node1_leaf:
+    build:
+      context: .
+      dockerfile: Dockerfile.sim
+    container_name: node1
+    environment:
+      - NODE_ID=0x0001
+      - NODE_ROLE=Leaf
+      - SIM_LORA_NEIGHBORS=node2
+      - STATIC_ROUTES=0x0005:0x0002
+    networks:
+      mesh_net:
+        ipv4_address: 172.20.0.2
+
+networks:
+  mesh_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

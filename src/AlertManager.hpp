@@ -7,6 +7,7 @@
 #include "telemetry/ConfigParser.hpp"
 #include "telemetry/MeshProtocol.hpp"
 #include "telemetry/SupabaseClient.hpp"
+#include "utils/compat.hpp"
 #include <memory>
 #include <iostream>
 
@@ -40,22 +41,64 @@ public:
     void on_mesh_receive(std::span<const uint8_t> data) {
         auto pkt = telemetry::MeshPacket::deserialize(data);
         if (pkt && pkt->verify_signature()) {
-            if (config_.role == telemetry::NodeRole::Gateway && pkt->header.target_id == config_.node_id) {
-                std::string msg(pkt->payload.begin(), pkt->payload.end());
-                std::cout << "[Gateway] Received Mesh Alert. Forwarding to external sinks.\n";
-                send_to_telegram(msg);
-                // Note: Real implementation would parse pkt to get original node_id and confidence
-                send_to_supabase(std::to_string(pkt->header.sender_id), 0.95); 
+            if (pkt->header.sender_id == config_.node_id) return; // Ignore self
+
+            std::cout << "[Mesh] RECV: sender=0x" << std::hex << pkt->header.sender_id 
+                      << " target=0x" << pkt->header.target_id 
+                      << " prev=0x" << pkt->header.prev_hop_id
+                      << " hops_rem=" << std::dec << (int)pkt->header.hop_limit << std::endl;
+
+            if (pkt->header.target_id == config_.node_id) {
+                if (config_.role == telemetry::NodeRole::Gateway) {
+                    std::string msg(pkt->payload.begin(), pkt->payload.end());
+                    std::cout << "[Gateway] Final destination reached. Forwarding to external sinks.\n";
+                    send_to_telegram(msg);
+                    send_to_supabase(std::to_string(pkt->header.sender_id), 0.95); 
+                } else {
+                    std::cout << "[Node] Packet reached target directly.\n";
+                }
             } else if (config_.role == telemetry::NodeRole::Router || config_.role == telemetry::NodeRole::Gateway) {
-                std::cout << "[Router] Forwarding packet...\n";
                 if (pkt->header.hop_limit > 0) {
                     pkt->header.hop_limit--;
                     auto next_hop = config_.route_manager.get_next_hop(pkt->header.target_id);
-                    if (next_hop && lora_) {
-                        lora_->send(pkt->serialize());
+                    
+                    if (next_hop && *next_hop == pkt->header.prev_hop_id) {
+                         std::cout << "[Mesh] BLOCK: Avoiding send back to 0x" << std::hex << *next_hop << std::dec << std::endl;
+                         return;
                     }
+
+                    if (next_hop && lora_) {
+                        std::cout << "[Mesh] FW: next_hop=0x" << std::hex << *next_hop << std::dec << std::endl;
+                        pkt->header.prev_hop_id = config_.node_id; // Set self as previous hop
+                        lora_->send(pkt->serialize());
+                    } else {
+                        std::cout << "[Mesh] DROP: No route to 0x" << std::hex << pkt->header.target_id << std::dec << std::endl;
+                    }
+                } else {
+                    std::cout << "[Mesh] DROP: Hop limit exceeded.\n";
                 }
             }
+        }
+    }
+
+    void send_heartbeat() {
+        if (!lora_) return;
+        const uint16_t gateway_id = 0x0005; // Gateway in our 5-node simulation
+        std::string hb = "HEARTBEAT from 0x" + std::to_string(config_.node_id);
+        
+        telemetry::MeshPacket pkt;
+        pkt.header.target_id = gateway_id;
+        pkt.header.sender_id = config_.node_id;
+        pkt.header.prev_hop_id = config_.node_id;
+        pkt.header.hop_limit = 10;
+        pkt.header.payload_len = hb.size();
+        pkt.header.signature = 0xABCD;
+        pkt.payload.assign(hb.begin(), hb.end());
+
+        auto next_hop = config_.route_manager.get_next_hop(gateway_id);
+        if (next_hop) {
+            std::cout << "[Mesh] Heartbeat -> 0x" << std::hex << *next_hop << std::dec << std::endl;
+            lora_->send(pkt.serialize());
         }
     }
 
@@ -78,10 +121,12 @@ private:
 
     void send_via_mesh(const std::string& message) {
         if (!lora_) return;
+        const uint16_t gateway_id = 0x0005; // Gateway in our 5-node simulation
         telemetry::MeshPacket pkt;
-        pkt.header.target_id = 0x0001; // Gateway ID
+        pkt.header.target_id = gateway_id;
         pkt.header.sender_id = config_.node_id;
-        pkt.header.hop_limit = 7;
+        pkt.header.prev_hop_id = config_.node_id;
+        pkt.header.hop_limit = 10;
         pkt.header.payload_len = message.size();
         pkt.header.signature = 0xABCD;
         pkt.payload.assign(message.begin(), message.end());

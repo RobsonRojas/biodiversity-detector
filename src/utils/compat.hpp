@@ -12,8 +12,31 @@
 #include <variant>
 
 namespace std {
+    template <typename E>
+    struct unexpected {
+        E error;
+        explicit unexpected(E e) : error(e) {}
+    };
+
     template <typename T, typename E>
-    using expected = std::variant<T, E>; // Simple shim for linting/old compilers
+    class expected {
+    public:
+        expected() : val_(T()), has_val_(true) {}
+        expected(T v) : val_(v), has_val_(true) {}
+        expected(const E& e) : err_(e), has_val_(false) {}
+        expected(unexpected<E> un) : err_(un.error), has_val_(false) {}
+        
+        bool has_value() const { return has_val_; }
+        T& operator*() { return val_; }
+        T& value() { return val_; }
+        E& error() { return err_; }
+        explicit operator bool() const { return has_val_; }
+
+    private:
+        T val_;
+        E err_;
+        bool has_val_;
+    };
 }
 #endif
 

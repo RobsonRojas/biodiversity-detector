@@ -1,8 +1,8 @@
 ## 1. Simulated Physical Layer
 
-- [ ] 1.1 Implement `SimulatedLoRaDriver.cpp` using UDP sockets for inter-container communication.
-- [ ] 1.2 Add environment variable support for `SIM_LORA_PORT` and `SIM_LORA_NEIGHBORS`.
-- [ ] 1.3 Ensure `LoRaDriver` can switch between `SX1262` (physical) and `UDP` (simulated) at compile-time or start-time.
+- [x] 1.1 Implement `SimulatedLoRaDriver.cpp` using UDP sockets for inter-container communication.
+- [x] 1.2 Add environment variable support for `SIM_LORA_PORT` and `SIM_LORA_NEIGHBORS`.
+- [x] 1.3 Ensure `LoRaDriver` can switch between `SX1262` (physical) and `UDP` (simulated) at compile-time or start-time.
 
 ## 2. Multi-Hop Topology & Routing
 

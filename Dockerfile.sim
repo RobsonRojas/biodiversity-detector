@@ -1,0 +1,30 @@
+FROM ubuntu:24.04 AS builder
+
+RUN apt-get update && apt-get install -y \
+    curl cmake git build-essential \
+    libcurl4-openssl-dev nlohmann-json3-dev pkg-config
+
+WORKDIR /app
+COPY . .
+
+# Build for simulation (native)
+RUN rm -rf build && mkdir build && cd build && \
+    cmake .. && \
+    make -j$(nproc)
+
+FROM ubuntu:24.04
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    libcurl4 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/build/guardian_node /app/guardian_node
+# Copy mock audio
+COPY mocks/chainsaw_mock.wav /app/assets/mocks/chainsaw_mock.wav
+
+# Default env for all nodes
+ENV USE_SIM_LORA=1
+ENV SIM_LORA_PORT=5000
+
+CMD ["./guardian_node"]
