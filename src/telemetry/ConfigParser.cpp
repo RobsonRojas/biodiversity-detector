@@ -1,27 +1,30 @@
 #include "ConfigParser.hpp"
+#include "SimulatedLoRaDriver.hpp"
+#include "PhysicalLoRaDriver.hpp"
 #include <iostream>
 #include <cstdlib>
 #include <sstream>
 
 namespace guardian::telemetry {
 
-NodeConfig ConfigParser::parse_static_config(const std::string& config_path) {
-    (void)config_path; // Unused for now as we use env vars
+NodeConfig ConfigParser::parse_from_env() {
+    NodeConfig config;
 
-    const char* id_env = std::getenv("NODE_ID");
-    uint16_t id = id_env ? static_cast<uint16_t>(std::stoul(id_env, nullptr, 0)) : 0x1001;
-    
-    NodeConfig config(id);
-    
-    const char* role_env = std::getenv("NODE_ROLE");
-    if (role_env) {
-        std::string role(role_env);
-        if (role == "Gateway") config.role = NodeRole::Gateway;
-        else if (role == "Router") config.role = NodeRole::Router;
-        else config.role = NodeRole::Leaf;
+    // 1. Basic Identifiers
+    const char* node_id_env = getenv("NODE_ID");
+    config.node_id = node_id_env ? static_cast<uint16_t>(std::stoul(node_id_env, nullptr, 0)) : 0x0001;
+
+    const char* role_env = getenv("NODE_ROLE");
+    if (role_env && std::string(role_env) == "gateway") {
+        config.role = NodeRole::Gateway;
+    } else if (role_env && std::string(role_env) == "router") {
+        config.role = NodeRole::Router;
+    } else {
+        config.role = NodeRole::Leaf;
     }
 
-    const char* routes_env = std::getenv("STATIC_ROUTES");
+    // 2. Mesh Routing Table
+    const char* routes_env = getenv("MESH_ROUTES"); // format: "target:next,target:next"
     if (routes_env) {
         std::stringstream ss(routes_env);
         std::string route_str;
@@ -31,14 +34,24 @@ NodeConfig ConfigParser::parse_static_config(const std::string& config_path) {
                 uint16_t dest = static_cast<uint16_t>(std::stoul(route_str.substr(0, colon), nullptr, 0));
                 uint16_t next = static_cast<uint16_t>(std::stoul(route_str.substr(colon + 1), nullptr, 0));
                 config.route_manager.add_route(dest, next);
-                std::cout << "[Config] Added route: " << std::hex << dest << " -> " << next << std::dec << std::endl;
             }
         }
     }
-    
-    std::cout << "[Config] Node " << std::hex << id << std::dec << " initialized as " 
-              << (config.role == NodeRole::Gateway ? "Gateway" : (config.role == NodeRole::Router ? "Router" : "Leaf")) 
-              << std::endl;
+
+    // 3. Driver Initialization
+    const char* lora_driver_env = getenv("LORA_DRIVER");
+    if (lora_driver_env && std::string(lora_driver_env) == "physical") {
+        const char* spi_dev = getenv("LORA_SPI") ? getenv("LORA_SPI") : "/dev/spidev0.0";
+        config.driver = std::make_shared<PhysicalLoRaDriver>(spi_dev, 8, 24, 25, 17); 
+    } else {
+        uint16_t sim_port = getenv("SIM_LORA_PORT") ? static_cast<uint16_t>(std::stoul(getenv("SIM_LORA_PORT"))) : 5000;
+        std::vector<uint16_t> neighbors;
+        const char* neigh_env = getenv("SIM_LORA_NEIGHBORS");
+        if (neigh_env) {
+             // Neighbors are hostnames for simulation, but for simplicity we'll logic it in SimulatedLoRaDriver
+        }
+        config.driver = std::make_shared<SimulatedLoRaDriver>(sim_port, neighbors);
+    }
 
     return config;
 }

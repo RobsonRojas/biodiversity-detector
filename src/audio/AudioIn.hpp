@@ -1,10 +1,9 @@
 #pragma once
 
 #include <string>
-#include <expected>
 #include <system_error>
 #include <vector>
-#include <span>
+#include "../utils/compat.hpp"
 
 namespace guardian::audio {
 
