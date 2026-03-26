@@ -1,0 +1,15 @@
+[package]
+name = "esp32"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+esp-idf-hal = "0.45"
+esp-idf-sys = "0.36"
+esp-idf-svc = "0.50"
+anyhow = "1"
+log = "0.4"
+esp-idf-logger = "0.11"
+
+[build-dependencies]
+embuild = "0.33"
