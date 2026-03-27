@@ -27,7 +27,7 @@ services:
       - NODE_ID=0x0004
       - NODE_ROLE=Router
       - SIM_LORA_NEIGHBORS=node3,node5
-      - STATIC_ROUTES=0x0005:0x0005
+      - MESH_ROUTES=0x0005:0x0005
     networks:
       mesh_net:
         ipv4_address: 172.20.0.5
@@ -41,7 +41,7 @@ services:
       - NODE_ID=0x0003
       - NODE_ROLE=Router
       - SIM_LORA_NEIGHBORS=node2,node4
-      - STATIC_ROUTES=0x0005:0x0004
+      - MESH_ROUTES=0x0005:0x0004
     networks:
       mesh_net:
         ipv4_address: 172.20.0.4
@@ -55,7 +55,7 @@ services:
       - NODE_ID=0x0002
       - NODE_ROLE=Router
       - SIM_LORA_NEIGHBORS=node1,node3
-      - STATIC_ROUTES=0x0005:0x0003
+      - MESH_ROUTES=0x0005:0x0003
     networks:
       mesh_net:
         ipv4_address: 172.20.0.3
@@ -69,7 +69,7 @@ services:
       - NODE_ID=0x0001
       - NODE_ROLE=Leaf
       - SIM_LORA_NEIGHBORS=node2
-      - STATIC_ROUTES=0x0005:0x0002
+      - MESH_ROUTES=0x0005:0x0002
     networks:
       mesh_net:
         ipv4_address: 172.20.0.2
