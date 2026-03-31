@@ -1,5 +1,0 @@
-/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles/GuardianCore.dir
-/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles/guardian_node.dir
-/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles/openspec_sync.dir
-/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles/edit_cache.dir
-/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles/rebuild_cache.dir

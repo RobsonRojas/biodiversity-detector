@@ -1,2 +1,0 @@
-# Hashes of file build rules.
-e8b87ff6b6365867744f9611896d9659 CMakeFiles/openspec_sync

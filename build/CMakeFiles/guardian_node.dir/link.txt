@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/guardian_node.dir/src/main.cpp.o -o guardian_node  libGuardianCore.a 
