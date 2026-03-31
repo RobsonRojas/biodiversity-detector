@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { 
   Table, TableBody, TableCell, TableContainer, 
-  TableHead, TableRow, Paper, Slider, Button, Chip, Typography, Box 
+  TableHead, TableRow, Paper, Slider, Button, Chip, Switch 
 } from '@mui/material';
 import { supabase } from '../lib/supabase';
 
@@ -12,8 +12,6 @@ interface NodeConfigParams {
   forward_audio: boolean;
   status: string;
 }
-
-import { Switch, FormControlLabel } from '@mui/material';
 
 const NodeConfig = () => {
     const [configs, setConfigs] = useState<NodeConfigParams[]>([]);

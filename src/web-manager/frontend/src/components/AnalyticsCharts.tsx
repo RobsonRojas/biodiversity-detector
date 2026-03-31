@@ -1,6 +1,6 @@
 import { 
     LineChart, Line, XAxis, YAxis, CartesianGrid, 
-    Tooltip, Legend, ResponsiveContainer 
+    Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { Typography, Paper, Box } from '@mui/material';
 

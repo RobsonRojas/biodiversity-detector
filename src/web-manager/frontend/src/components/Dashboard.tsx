@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { 
-    Grid2 as Grid, Paper, Typography, Box, Container, 
+    Grid, Paper, Typography, Box, Container, 
     Tabs, Tab, Button, Stack 
 } from '@mui/material';
 import { Download as DownloadIcon } from 'lucide-react';

@@ -1,7 +1,7 @@
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 // Custom icons using Material Icons style / SVG
@@ -32,21 +32,12 @@ const nodes = [
 ];
 
 const Map = () => {
-  const [links, setLinks] = useState<any[]>([]);
-
   useEffect(() => {
-    // Listen to detections to update link colors based on transient RSSI
-    // (In a real system we'd listen to a dedicated 'links' table)
+    // Listen to detections to update visualization if needed
     const channel = supabase
       .channel('map-telemetry')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'detections' }, payload => {
-          // Update the mock link quality for visualization
-          // We connect Node i to Node i+1 in our linear topology
-          setLinks(prev => {
-             const newLinks = [...prev];
-             // Simple logic for simulation visualization
-             return newLinks;
-          });
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'detections' }, () => {
+          // Placeholder for real-time updates
       })
       .subscribe();
 

@@ -3,6 +3,8 @@ FROM ubuntu:24.04 AS builder-rpi
 
 # Configuração de repositórios multi-arch
 RUN dpkg --add-architecture arm64 && \
+    sed -i 's/^deb /deb [arch=amd64] /g' /etc/apt/sources.list.d/ubuntu.sources && \
+    echo "Types: deb\nURIs: http://ports.ubuntu.com/ubuntu-ports/\nSuites: noble noble-updates noble-security\nComponents: main universe restricted multiverse\nArchitectures: arm64" > /etc/apt/sources.list.d/arm64.sources && \
     apt-get update && apt-get install -y \
     curl cmake git build-essential \
     crossbuild-essential-arm64 g++-aarch64-linux-gnu qemu-user-static \
