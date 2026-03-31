@@ -1,8 +1,9 @@
 #pragma once
 
 #include <string>
-#include "../utils/compat.hpp"
 #include <vector>
+#include <cstdint>
+#include "../utils/compat.hpp"
 
 namespace guardian::telemetry {
 

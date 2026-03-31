@@ -3,7 +3,7 @@
 #include <string>
 #include <iostream>
 #include <curl/curl.h>
-#include <nlohmann/json.hpp>
+#include "../utils/json.hpp"
 #include <vector>
 #include <cstdint>
 
@@ -43,33 +43,6 @@ public:
             {"rssi_dbm", rssi}
         };
         return send_post(payload.dump());
-    }
-
-    bool upload_audio(const std::string& bucket, const std::string& path, const std::vector<uint8_t>& data) {
-        CURL* curl = curl_easy_init();
-        if (!curl) return false;
-
-        struct curl_slist* headers = nullptr;
-        headers = curl_slist_append(headers, "Content-Type: application/json");
-        std::string auth = "Authorization: Bearer " + key_;
-        headers = curl_slist_append(headers, auth.c_str());
-        std::string api_key = "apikey: " + key_;
-        headers = curl_slist_append(headers, api_key.c_str());
-
-        curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data.c_str());
-
-        CURLcode res = curl_easy_perform(curl);
-        bool success = (res == CURLE_OK);
-
-        if (!success) {
-            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
-        }
-
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl);
-        return success;
     }
 
     bool upload_audio(const std::string& bucket, const std::string& path, const std::vector<uint8_t>& data) {

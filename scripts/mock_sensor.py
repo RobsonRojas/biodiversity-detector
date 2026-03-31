@@ -37,9 +37,43 @@ def generate_background_data(duration_sec=10, sample_rate=16000):
     
     return pcm_data.tobytes()
 
+def generate_birds_data(duration_sec=10, sample_rate=16000):
+    """
+    Generates high-frequency chirps (simulating birds).
+    """
+    t = np.linspace(0, duration_sec, int(sample_rate * duration_sec), endpoint=False)
+    signal = np.zeros_like(t)
+    
+    # Generate random chirps
+    for _ in range(5):
+        start_t = np.random.uniform(0, duration_sec - 0.5)
+        length = 0.3
+        chirp_t = np.linspace(0, length, int(sample_rate * length))
+        # Frequency sweep from 2kHz to 4kHz
+        chirp = np.sin(2 * np.pi * np.linspace(2000, 4000, len(chirp_t)) * chirp_t)
+        
+        idx = int(start_t * sample_rate)
+        signal[idx:idx+len(chirp)] += 0.5 * chirp
+        
+    signal = np.clip(signal, -1.0, 1.0)
+    pcm_data = (signal * (2**31 - 1)).astype(np.int32)
+    return pcm_data.tobytes()
+
+def generate_rain_data(duration_sec=10, sample_rate=16000):
+    """
+    Generates white noise with periodic 'patter' (simulating rain).
+    """
+    num_samples = int(sample_rate * duration_sec)
+    signal = 0.2 * np.random.normal(0, 1, num_samples)
+    
+    # Scale and clip
+    signal = np.clip(signal, -1.0, 1.0)
+    pcm_data = (signal * (2**31 - 1)).astype(np.int32)
+    return pcm_data.tobytes()
+
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python3 mock_sensor.py <type: motoserra|background> <output_file>")
+        print("Usage: python3 mock_sensor.py <type: motoserra|background|birds|rain> <output_file>")
         sys.exit(1)
         
     data_type = sys.argv[1]
@@ -47,6 +81,10 @@ if __name__ == "__main__":
     
     if data_type == "motoserra":
         data = generate_motoserra_data()
+    elif data_type == "birds":
+        data = generate_birds_data()
+    elif data_type == "rain":
+        data = generate_rain_data()
     else:
         data = generate_background_data()
         

@@ -111,11 +111,101 @@ CMakeFiles/GuardianCore.dir/src/AlertManager.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/GuardianCore.dir/src/AlertManager.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /media/rob/windows5/git/motoserra-detect-system/src/AlertManager.cpp -o CMakeFiles/GuardianCore.dir/src/AlertManager.cpp.s
 
+CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.o: CMakeFiles/GuardianCore.dir/flags.make
+CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.o: /media/rob/windows5/git/motoserra-detect-system/src/telemetry/LoRaDriver.cpp
+CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.o: CMakeFiles/GuardianCore.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.o -MF CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.o.d -o CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.o -c /media/rob/windows5/git/motoserra-detect-system/src/telemetry/LoRaDriver.cpp
+
+CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /media/rob/windows5/git/motoserra-detect-system/src/telemetry/LoRaDriver.cpp > CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.i
+
+CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /media/rob/windows5/git/motoserra-detect-system/src/telemetry/LoRaDriver.cpp -o CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.s
+
+CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.o: CMakeFiles/GuardianCore.dir/flags.make
+CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.o: /media/rob/windows5/git/motoserra-detect-system/src/telemetry/SimulatedLoRaDriver.cpp
+CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.o: CMakeFiles/GuardianCore.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.o -MF CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.o.d -o CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.o -c /media/rob/windows5/git/motoserra-detect-system/src/telemetry/SimulatedLoRaDriver.cpp
+
+CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /media/rob/windows5/git/motoserra-detect-system/src/telemetry/SimulatedLoRaDriver.cpp > CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.i
+
+CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /media/rob/windows5/git/motoserra-detect-system/src/telemetry/SimulatedLoRaDriver.cpp -o CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.s
+
+CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.o: CMakeFiles/GuardianCore.dir/flags.make
+CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.o: /media/rob/windows5/git/motoserra-detect-system/src/telemetry/PhysicalLoRaDriver.cpp
+CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.o: CMakeFiles/GuardianCore.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.o -MF CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.o.d -o CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.o -c /media/rob/windows5/git/motoserra-detect-system/src/telemetry/PhysicalLoRaDriver.cpp
+
+CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /media/rob/windows5/git/motoserra-detect-system/src/telemetry/PhysicalLoRaDriver.cpp > CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.i
+
+CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /media/rob/windows5/git/motoserra-detect-system/src/telemetry/PhysicalLoRaDriver.cpp -o CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.s
+
+CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.o: CMakeFiles/GuardianCore.dir/flags.make
+CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.o: /media/rob/windows5/git/motoserra-detect-system/src/telemetry/MeshProtocol.cpp
+CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.o: CMakeFiles/GuardianCore.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.o -MF CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.o.d -o CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.o -c /media/rob/windows5/git/motoserra-detect-system/src/telemetry/MeshProtocol.cpp
+
+CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /media/rob/windows5/git/motoserra-detect-system/src/telemetry/MeshProtocol.cpp > CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.i
+
+CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /media/rob/windows5/git/motoserra-detect-system/src/telemetry/MeshProtocol.cpp -o CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.s
+
+CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.o: CMakeFiles/GuardianCore.dir/flags.make
+CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.o: /media/rob/windows5/git/motoserra-detect-system/src/telemetry/ConfigParser.cpp
+CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.o: CMakeFiles/GuardianCore.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.o -MF CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.o.d -o CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.o -c /media/rob/windows5/git/motoserra-detect-system/src/telemetry/ConfigParser.cpp
+
+CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /media/rob/windows5/git/motoserra-detect-system/src/telemetry/ConfigParser.cpp > CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.i
+
+CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /media/rob/windows5/git/motoserra-detect-system/src/telemetry/ConfigParser.cpp -o CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.s
+
+CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.o: CMakeFiles/GuardianCore.dir/flags.make
+CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.o: /media/rob/windows5/git/motoserra-detect-system/src/telemetry/TelegramClient.cpp
+CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.o: CMakeFiles/GuardianCore.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.o -MF CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.o.d -o CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.o -c /media/rob/windows5/git/motoserra-detect-system/src/telemetry/TelegramClient.cpp
+
+CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /media/rob/windows5/git/motoserra-detect-system/src/telemetry/TelegramClient.cpp > CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.i
+
+CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /media/rob/windows5/git/motoserra-detect-system/src/telemetry/TelegramClient.cpp -o CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.s
+
 # Object files for target GuardianCore
 GuardianCore_OBJECTS = \
 "CMakeFiles/GuardianCore.dir/src/audio/AudioIn.cpp.o" \
 "CMakeFiles/GuardianCore.dir/src/ai/DetectionEngine.cpp.o" \
-"CMakeFiles/GuardianCore.dir/src/AlertManager.cpp.o"
+"CMakeFiles/GuardianCore.dir/src/AlertManager.cpp.o" \
+"CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.o" \
+"CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.o" \
+"CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.o" \
+"CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.o" \
+"CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.o" \
+"CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.o"
 
 # External object files for target GuardianCore
 GuardianCore_EXTERNAL_OBJECTS =
@@ -123,9 +213,15 @@ GuardianCore_EXTERNAL_OBJECTS =
 libGuardianCore.a: CMakeFiles/GuardianCore.dir/src/audio/AudioIn.cpp.o
 libGuardianCore.a: CMakeFiles/GuardianCore.dir/src/ai/DetectionEngine.cpp.o
 libGuardianCore.a: CMakeFiles/GuardianCore.dir/src/AlertManager.cpp.o
+libGuardianCore.a: CMakeFiles/GuardianCore.dir/src/telemetry/LoRaDriver.cpp.o
+libGuardianCore.a: CMakeFiles/GuardianCore.dir/src/telemetry/SimulatedLoRaDriver.cpp.o
+libGuardianCore.a: CMakeFiles/GuardianCore.dir/src/telemetry/PhysicalLoRaDriver.cpp.o
+libGuardianCore.a: CMakeFiles/GuardianCore.dir/src/telemetry/MeshProtocol.cpp.o
+libGuardianCore.a: CMakeFiles/GuardianCore.dir/src/telemetry/ConfigParser.cpp.o
+libGuardianCore.a: CMakeFiles/GuardianCore.dir/src/telemetry/TelegramClient.cpp.o
 libGuardianCore.a: CMakeFiles/GuardianCore.dir/build.make
 libGuardianCore.a: CMakeFiles/GuardianCore.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX static library libGuardianCore.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/media/rob/windows5/git/motoserra-detect-system/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX static library libGuardianCore.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/GuardianCore.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/GuardianCore.dir/link.txt --verbose=$(VERBOSE)
 

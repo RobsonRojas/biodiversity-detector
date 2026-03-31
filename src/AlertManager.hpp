@@ -12,6 +12,7 @@
 #include <iostream>
 #include <expected>
 #include <span>
+#include "utils/json.hpp"
 #include <map>
 #include <vector>
 
@@ -36,19 +37,17 @@ public:
         
         if (config_.role == telemetry::NodeRole::Gateway) {
             send_to_telegram(message);
-            send_to_supabase(event.device_id, event.confidence, 4200, -85); // Default mock for Gateway self-report
+            send_to_supabase(event.device_id, event.confidence, 4200, -85); 
         } else {
-            send_via_mesh(message, 4100, -90); // Default mock for Leaf/Router
+            send_via_mesh(message, 4100, -90); 
         }
     }
     
     void on_mesh_receive(std::span<const uint8_t> data) {
         auto pkt = telemetry::MeshPacket::deserialize(data);
         if (pkt && pkt->verify_signature()) {
-            if (pkt->header.sender_id == config_.node_id) return; // Ignore self
+            if (pkt->header.sender_id == config_.node_id) return; 
 
-            // Check if it's an audio data packet (heuristic: payload >= 6 bytes and alert was recently seen)
-            // In a more robust system, we would use a packet type field in MeshHeader.
             if (pkt->payload.size() >= 186) {
                 handle_audio_fragment(*pkt);
                 return;
@@ -65,7 +64,7 @@ public:
                     std::string msg(pkt->payload.begin(), pkt->payload.end());
                     std::cout << "[Gateway] Final destination reached. Reporting Telemetry.\n";
                     
-                    std::string sound_class = "chainsaw"; // Default or parse from message
+                    std::string sound_class = "chainsaw"; 
                     if (msg.find("birds") != std::string::npos) sound_class = "birds";
                     else if (msg.find("rain") != std::string::npos) sound_class = "rain";
 
@@ -73,7 +72,6 @@ public:
                     send_to_supabase(std::to_string(pkt->header.sender_id), 0.95, pkt->header.battery_mv, pkt->header.last_rssi, sound_class); 
                 }
             } else if (config_.role == telemetry::NodeRole::Router || config_.role == telemetry::NodeRole::Gateway) {
-                // ... (routing logic remains same)
                 if (pkt->header.hop_limit > 0) {
                     pkt->header.hop_limit--;
                     auto next_hop = config_.route_manager.get_next_hop(pkt->header.target_id);
@@ -84,72 +82,6 @@ public:
                 }
             }
         }
-    }
-
-private:
-    struct AudioSession {
-        uint16_t total_frags = 0;
-        uint16_t received_count = 0;
-        std::string sound_class;
-        std::string node_id;
-        std::map<uint16_t, std::vector<uint8_t>> fragments;
-    };
-
-    std::map<uint16_t, AudioSession> audio_sessions_;
-
-    void handle_audio_fragment(const telemetry::MeshPacket& pkt) {
-        if (pkt.payload.size() < 6) return;
-        
-        uint16_t session_id = (pkt.payload[0] << 8) | pkt.payload[1];
-        uint16_t frag_index = (pkt.payload[2] << 8) | pkt.payload[3];
-        uint16_t total_frags = (pkt.payload[4] << 8) | pkt.payload[5];
-
-        auto& session = audio_sessions_[session_id];
-        if (session.total_frags == 0) {
-            session.total_frags = total_frags;
-            session.node_id = std::to_string(pkt.header.sender_id);
-            session.sound_class = "unknown"; // Ideally passed in alert packet
-            std::cout << "[Gateway] New Audio Session " << session_id << " from Node " << session.node_id << " (Total: " << total_frags << ")\n";
-        }
-
-        if (session.fragments.find(frag_index) == session.fragments.end()) {
-            std::vector<uint8_t> frag_data(pkt.payload.begin() + 6, pkt.payload.end());
-            session.fragments[frag_index] = frag_data;
-            session.received_count++;
-            
-            if (session.received_count % 10 == 0 || session.received_count == total_frags) {
-                std::cout << "[Gateway] Session " << session_id << " Progress: " << session.received_count << "/" << total_frags << "\n";
-            }
-
-            if (session.received_count >= total_frags) {
-                finalize_audio_session(session_id);
-            }
-        }
-    }
-
-    void finalize_audio_session(uint16_t session_id) {
-        auto& session = audio_sessions_[session_id];
-        std::vector<uint8_t> complete_audio;
-        for (uint16_t i = 0; i < session.total_frags; ++i) {
-            if (session.fragments.count(i)) {
-                complete_audio.insert(complete_audio.end(), session.fragments[i].begin(), session.fragments[i].end());
-            } else {
-                complete_audio.insert(complete_audio.end(), 180, 0); // Zero-fill gap
-            }
-        }
-
-        std::string filename = "audio_" + session.node_id + "_" + std::to_string(session_id) + ".bin";
-        if (supabase_) {
-            if (supabase_->upload_audio("detection-audio", filename, complete_audio)) {
-                std::string url = "/storage/v1/object/public/detection-audio/" + filename;
-                supabase_->post_detection(session.node_id, 0.99, "unknown", url);
-            }
-        }
-        if (client_) {
-            client_->send_audio("New Sound Detection from Node " + session.node_id, complete_audio);
-        }
-        
-        audio_sessions_.erase(session_id);
     }
 
     void send_heartbeat(uint16_t battery_mv, int8_t rssi) {
@@ -175,6 +107,71 @@ private:
     }
 
 private:
+    struct AudioSession {
+        uint16_t total_frags = 0;
+        uint16_t received_count = 0;
+        std::string sound_class;
+        std::string node_id;
+        std::map<uint16_t, std::vector<uint8_t>> fragments;
+    };
+
+    std::map<uint16_t, AudioSession> audio_sessions_;
+
+    void handle_audio_fragment(const telemetry::MeshPacket& pkt) {
+        if (pkt.payload.size() < 6) return;
+        
+        uint16_t session_id = (pkt.payload[0] << 8) | pkt.payload[1];
+        uint16_t frag_index = (pkt.payload[2] << 8) | pkt.payload[3];
+        uint16_t total_frags = (pkt.payload[4] << 8) | pkt.payload[5];
+
+        auto& session = audio_sessions_[session_id];
+        if (session.total_frags == 0) {
+            session.total_frags = total_frags;
+            session.node_id = std::to_string(pkt.header.sender_id);
+            session.sound_class = "unknown"; 
+            std::cout << "[Gateway] New Audio Session " << session_id << " from Node " << session.node_id << " (Total: " << total_frags << ")\n";
+        }
+
+        if (session.fragments.find(frag_index) == session.fragments.end()) {
+            std::vector<uint8_t> frag_data(pkt.payload.begin() + 6, pkt.payload.end());
+            session.fragments[frag_index] = frag_data;
+            session.received_count++;
+            
+            if (session.received_count % 10 == 0 || session.received_count == total_frags) {
+                std::cout << "[Gateway] Session " << session_id << " Progress: " << session.received_count << "/" << total_frags << "\n";
+            }
+
+            if (session.received_count >= total_frags) {
+                finalize_audio_session(session_id);
+            }
+        }
+    }
+
+    void finalize_audio_session(uint16_t session_id) {
+        auto& session = audio_sessions_[session_id];
+        std::vector<uint8_t> complete_audio;
+        for (uint16_t i = 0; i < session.total_frags; ++i) {
+            if (session.fragments.count(i)) {
+                complete_audio.insert(complete_audio.end(), session.fragments[i].begin(), session.fragments[i].end());
+            } else {
+                complete_audio.insert(complete_audio.end(), 180, 0); 
+            }
+        }
+
+        std::string filename = "audio_" + session.node_id + "_" + std::to_string(session_id) + ".bin";
+        if (supabase_) {
+            if (supabase_->upload_audio("detection-audio", filename, complete_audio)) {
+                std::string url = "/storage/v1/object/public/detection-audio/" + filename;
+                supabase_->post_detection(session.node_id, 0.99, "unknown", url);
+            }
+        }
+        if (client_) {
+            client_->send_audio("New Sound Detection from Node " + session.node_id, complete_audio);
+        }
+        
+        audio_sessions_.erase(session_id);
+    }
+
     void send_to_telegram(const std::string& message) {
         if (!client_) return;
         client_->send_message(message);

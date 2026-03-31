@@ -1,5 +1,7 @@
 #include "TelegramClient.hpp"
 #include <iostream>
+#include <vector>
+#include <cstdint>
 
 namespace guardian::telemetry {
 
