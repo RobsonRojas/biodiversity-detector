@@ -29,6 +29,7 @@ public:
      * @return std::expected<void, TelemetryError>
      */
     std::expected<void, TelemetryError> send_message(const std::string& message);
+    std::expected<void, TelemetryError> send_audio(const std::string& caption, const std::vector<uint8_t>& data);
 
 private:
     TelegramConfig config_;

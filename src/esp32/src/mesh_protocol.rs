@@ -3,25 +3,27 @@ use core::mem;
 #[repr(C, packed)]
 #[derive(Debug, Clone, Copy)]
 pub struct MeshHeader {
-    pub sender_id: u16,
     pub target_id: u16,
+    pub sender_id: u16,
+    pub prev_hop_id: u16,
     pub battery_mv: u16,
     pub last_rssi: i8,
-    pub hops_rem: u8,
-    pub prev_hop_id: u8,
-    pub data_len: u8,
+    pub hop_limit: u8,
+    pub payload_len: u8,
+    pub signature: u16,
 }
 
 impl MeshHeader {
     pub fn new(sender: u16, target: u16, bat: u16, rssi: i8) -> Self {
         Self {
-            sender_id: sender,
             target_id: target,
+            sender_id: sender,
+            prev_hop_id: sender,
             battery_mv: bat,
             last_rssi: rssi,
-            hops_rem: 10,
-            prev_hop_id: sender as u8, // Simplification for RPi compat
-            data_len: 0,
+            hop_limit: 10,
+            payload_len: 0,
+            signature: 0xABCD,
         }
     }
 
@@ -47,6 +49,39 @@ impl MeshHeader {
             );
         }
         Some(header)
+    }
+}
+
+#[repr(C, packed)]
+#[derive(Debug, Clone, Copy)]
+pub struct MeshDataPacket {
+    pub header: MeshHeader,
+    pub session_id: u16,
+    pub frag_index: u16,
+    pub total_frags: u16,
+    pub data: [u8; 180],
+}
+
+impl MeshDataPacket {
+    pub fn new(sender: u16, target: u16, session: u16, index: u16, total: u16) -> Self {
+        let mut header = MeshHeader::new(sender, target, 0, 0);
+        header.payload_len = 180 + 6; // data + session/frag/total
+        Self {
+            header,
+            session_id: session,
+            frag_index: index,
+            total_frags: total,
+            data: [0u8; 180],
+        }
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        unsafe {
+            core::slice::from_raw_parts(
+                (self as *const Self) as *const u8,
+                mem::size_of::<Self>(),
+            )
+        }
     }
 }
 

@@ -13,6 +13,7 @@ use crate::detection_engine::DetectionEngine;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+use esp_idf_svc::nvs::{EspDefaultNvsPartition, EspNvs, NvsDefault};
 
 fn main() -> anyhow::Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -48,10 +49,23 @@ fn main() -> anyhow::Result<()> {
     let lora = Arc::new(Mutex::new(LoRaDriver::new(peripherals)?));
     lora.lock().unwrap().initialize()?;
 
-    let engine = DetectionEngine::new("motoserra_detect_v1.tflite")?;
+    let nvs_partition = EspDefaultNvsPartition::take()?;
+    let mut nvs = EspNvs::new(nvs_partition, "config", true)?;
+    
+    // Default to true (forward audio) if not set
+    let forward_audio = match nvs.get_u8("forward_audio")? {
+        Some(val) => val != 0,
+        None => {
+            nvs.set_u8("forward_audio", 1)?;
+            true
+        }
+    };
+    
+    let engine = DetectionEngine::new("forest_sounds_v1.tflite")?;
 
     thread::spawn(move || {
         let mut inference_frame = [0i32; 16000];
+        let mut session_id_counter: u16 = 0;
         loop {
             let ready = {
                 let b = buffer_inference.lock().unwrap();
@@ -64,15 +78,35 @@ fn main() -> anyhow::Result<()> {
             };
 
             if ready {
-                if let Ok(confidence) = engine.detect_motoserra(&inference_frame) {
-                    if confidence > 0.85 {
-                        log::info!("[MAIN] Chainsaw Detected! Confidence: {:.2}", confidence);
+                if let Ok((class, confidence)) = engine.detect_sound(&inference_frame) {
+                    if confidence > 0.70 && class != "background" {
+                        log::info!("[MAIN] {} Detected! Confidence: {:.2}", class, confidence);
                         
-                        let mut header = mesh_protocol::MeshHeader::new(0x0E32, 0x0005, 3950, -85);
-                        header.data_len = 0; // Alert is signaling by presence in this context
+                        let header = mesh_protocol::MeshHeader::new(0x0E32, 0x0005, 3950, -85);
                         
                         let mut l = lora.lock().unwrap();
                         let _ = l.send(header.as_bytes());
+
+                        if forward_audio {
+                            log::info!("[MAIN] Forwarding audio fragments for {}...", class);
+                            let mut encoded = [0u8; 16000];
+                            let n = AudioI2S::encode_mu_law(&inference_frame, &mut encoded);
+                            
+                            let total_frags = ((n + 179) / 180) as u16;
+                            session_id_counter = session_id_counter.wrapping_add(1);
+                            
+                            for i in 0..total_frags {
+                                let mut packet = mesh_protocol::MeshDataPacket::new(
+                                    0x0E32, 0x0005, session_id_counter, i, total_frags
+                                );
+                                let start = (i as usize) * 180;
+                                let end = std::cmp::min(start + 180, n);
+                                packet.data[..end-start].copy_from_slice(&encoded[start..end]);
+                                
+                                let _ = l.send(packet.as_bytes());
+                                thread::sleep(Duration::from_millis(50)); // Avoid flooding LoRa chip
+                            }
+                        }
                     }
                 }
             }

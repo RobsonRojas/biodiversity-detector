@@ -4,6 +4,8 @@
 #include <iostream>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
+#include <vector>
+#include <cstdint>
 
 namespace guardian {
 namespace telemetry {
@@ -19,12 +21,17 @@ public:
         curl_global_cleanup();
     }
 
-    bool post_detection(const std::string& node_id, double confidence) {
+    bool post_detection(const std::string& node_id, double confidence, 
+                        const std::string& sound_class = "chainsaw",
+                        const std::string& audio_url = "") {
         nlohmann::json payload = {
             {"node_id", node_id},
             {"confidence", confidence},
-            {"status", "online"}
+            {"sound_class", sound_class}
         };
+        if (!audio_url.empty()) {
+            payload["audio_url"] = audio_url;
+        }
         return send_post(payload.dump());
     }
 
@@ -38,8 +45,7 @@ public:
         return send_post(payload.dump());
     }
 
-private:
-    bool send_post(const std::string& json_data) {
+    bool upload_audio(const std::string& bucket, const std::string& path, const std::vector<uint8_t>& data) {
         CURL* curl = curl_easy_init();
         if (!curl) return false;
 
@@ -53,6 +59,66 @@ private:
         curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_data.c_str());
+
+        CURLcode res = curl_easy_perform(curl);
+        bool success = (res == CURLE_OK);
+
+        if (!success) {
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+        }
+
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+        return success;
+    }
+
+    bool upload_audio(const std::string& bucket, const std::string& path, const std::vector<uint8_t>& data) {
+        CURL* curl = curl_easy_init();
+        if (!curl) return false;
+
+        struct curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, "Content-Type: audio/wav");
+        std::string auth = "Authorization: Bearer " + key_;
+        headers = curl_slist_append(headers, auth.c_str());
+        std::string api_key = "apikey: " + key_;
+        headers = curl_slist_append(headers, api_key.c_str());
+
+        std::string upload_url = url_ + "/storage/v1/object/" + bucket + "/" + path;
+
+        curl_easy_setopt(curl, CURLOPT_URL, upload_url.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.data());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
+
+        CURLcode res = curl_easy_perform(curl);
+        bool success = (res == CURLE_OK);
+
+        if (!success) {
+            std::cerr << "[Supabase] Audio upload failed: " << curl_easy_strerror(res) << std::endl;
+        } else {
+            std::cout << "[Supabase] Audio uploaded successfully: " << path << std::endl;
+        }
+
+        curl_slist_free_all(headers);
+        curl_easy_cleanup(curl);
+        return success;
+    }
+
+private:
+    bool send_post(const std::string& data) {
+        CURL* curl = curl_easy_init();
+        if (!curl) return false;
+
+        struct curl_slist* headers = nullptr;
+        headers = curl_slist_append(headers, "Content-Type: application/json");
+        std::string auth = "Authorization: Bearer " + key_;
+        headers = curl_slist_append(headers, auth.c_str());
+        std::string api_key = "apikey: " + key_;
+        headers = curl_slist_append(headers, api_key.c_str());
+
+        curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.c_str());
 
         CURLcode res = curl_easy_perform(curl);
         bool success = (res == CURLE_OK);

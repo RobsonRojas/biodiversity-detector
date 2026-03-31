@@ -14,4 +14,10 @@ std::expected<void, TelemetryError> TelegramClient::send_message(const std::stri
     return {};
 }
 
+std::expected<void, TelemetryError> TelegramClient::send_audio(const std::string& caption, const std::vector<uint8_t>& data) {
+    std::cout << "[TelegramClient] Mock Sending Audio to Telegram. Caption: " << caption 
+              << " Data Size: " << data.size() << " bytes" << std::endl;
+    return {};
+}
+
 } // namespace guardian::telemetry

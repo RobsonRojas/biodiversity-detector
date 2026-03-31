@@ -45,4 +45,42 @@ impl<'d> AudioI2S<'d> {
         let bytes_read = self.driver.read_raw(byte_buffer, esp_idf_hal::delay::BLOCK)?;
         Ok(bytes_read / std::mem::size_of::<i32>())
     }
+
+    pub fn encode_mu_law(samples: &[i32], output: &mut [u8]) -> usize {
+        let mut count = 0;
+        for &sample in samples.iter() {
+            // Take 16-bit MSB from 32-bit sample
+            let pcm16 = (sample >> 16) as i16;
+            output[count] = Self::linear_to_mu_law(pcm16);
+            count += 1;
+            if count >= output.len() { break; }
+        }
+        count
+    }
+
+    fn linear_to_mu_law(pcm: i16) -> u8 {
+        let mut pcm = pcm;
+        let mut mask: u8 = 0;
+        if pcm < 0 {
+            pcm = -pcm;
+            mask = 0x7F;
+        } else {
+            mask = 0xFF;
+        }
+
+        if pcm > 32635 { pcm = 32635; }
+        pcm += 132;
+
+        let mut exponent: u8 = 7;
+        let mut exp_mask: i16 = 0x4000;
+        while (pcm & exp_mask) == 0 && exponent > 0 {
+            exponent -= 1;
+            exp_mask >>= 1;
+        }
+
+        let mantissa = ((pcm >> (exponent + 3)) & 0x0F) as u8;
+        let mu_law = (exponent << 4) | mantissa;
+        
+        !(mu_law ^ mask)
+    }
 }

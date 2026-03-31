@@ -9,8 +9,11 @@ interface NodeConfigParams {
   node_id: string;
   detection_threshold: number;
   heartbeat_interval_seconds: number;
+  forward_audio: boolean;
   status: string;
 }
+
+import { Switch, FormControlLabel } from '@mui/material';
 
 const NodeConfig = () => {
     const [configs, setConfigs] = useState<NodeConfigParams[]>([]);
@@ -43,6 +46,7 @@ const NodeConfig = () => {
                         <TableCell>Node ID</TableCell>
                         <TableCell>Threshold</TableCell>
                         <TableCell>Interval (s)</TableCell>
+                        <TableCell>Mode (Stream)</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell>Action</TableCell>
                     </TableRow>
@@ -57,7 +61,7 @@ const NodeConfig = () => {
                                     min={0.5} max={1.0} step={0.05} size="small"
                                     valueLabelDisplay="auto"
                                     onChangeCommitted={(_, v) => handleUpdate(c.node_id, { detection_threshold: v as number })}
-                                    sx={{ width: 100 }}
+                                    sx={{ width: 80 }}
                                 />
                             </TableCell>
                             <TableCell>
@@ -66,7 +70,14 @@ const NodeConfig = () => {
                                     min={10} max={300} step={10} size="small"
                                     valueLabelDisplay="auto"
                                     onChangeCommitted={(_, v) => handleUpdate(c.node_id, { heartbeat_interval_seconds: v as number })}
-                                    sx={{ width: 100 }}
+                                    sx={{ width: 80 }}
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <Switch 
+                                    checked={c.forward_audio} 
+                                    size="small"
+                                    onChange={(e) => handleUpdate(c.node_id, { forward_audio: e.target.checked })} 
                                 />
                             </TableCell>
                             <TableCell>

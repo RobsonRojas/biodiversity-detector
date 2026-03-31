@@ -9,6 +9,8 @@ interface Detection {
   id: string;
   node_id: string;
   confidence: number;
+  sound_class: string;
+  audio_url?: string;
   battery_mv: number;
   last_rssi: number;
   pushed_at: string;
@@ -54,7 +56,9 @@ const DetectionTable = () => {
         <TableHead>
           <TableRow>
             <TableCell>Source</TableCell>
+            <TableCell>Type</TableCell>
             <TableCell>Confidence</TableCell>
+            <TableCell>Audio</TableCell>
             <TableCell>Battery</TableCell>
             <TableCell>RSSI</TableCell>
             <TableCell>Time</TableCell>
@@ -63,7 +67,7 @@ const DetectionTable = () => {
         <TableBody>
           {detections.length === 0 ? (
              <TableRow>
-               <TableCell colSpan={5} align="center">
+               <TableCell colSpan={7} align="center">
                  <Typography variant="body2" sx={{ py: 2, color: 'text.secondary' }}>
                    No detections reported yet
                  </Typography>
@@ -75,10 +79,25 @@ const DetectionTable = () => {
                 <TableCell>Node 0x{parseInt(d.node_id).toString(16)}</TableCell>
                 <TableCell>
                   <Chip 
+                    label={d.sound_class || 'chainsaw'} 
+                    size="small" 
+                    variant="outlined"
+                    color={d.sound_class === 'chainsaw' ? 'error' : 'primary'}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Chip 
                     label={`${(d.confidence * 100).toFixed(1)}%`}
                     color={d.confidence > 0.9 ? 'error' : 'warning'}
                     size="small"
                   />
+                </TableCell>
+                <TableCell>
+                  {d.audio_url ? (
+                    <audio src={d.audio_url} controls style={{ height: 30, width: 120 }} />
+                  ) : (
+                    <Typography variant="caption" color="text.disabled">N/A</Typography>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" color={d.battery_mv < 3700 ? 'error' : 'inherit'}>
