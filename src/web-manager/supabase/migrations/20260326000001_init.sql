@@ -1,5 +1,5 @@
 -- Enable Realtime for detections
-alter publication supabase_realtime add table detections;
+
 
 -- Create detections table
 CREATE TABLE IF NOT EXISTS detections (

@@ -27,22 +27,25 @@ public:
         nlohmann::json payload = {
             {"node_id", node_id},
             {"confidence", confidence},
-            {"sound_class", sound_class}
+            {"sound_class", sound_class},
+            {"pushed_at", "now()"} // Let Postgrest handle timestamp or use now()
         };
         if (!audio_url.empty()) {
             payload["audio_url"] = audio_url;
         }
-        return send_post(payload.dump());
+        return send_post(url_ + "/rest/v1/detections", payload.dump());
     }
 
     bool post_heartbeat(const std::string& node_id, int battery, int rssi) {
         nlohmann::json payload = {
-            {"node_id", node_id},
+            {"id", node_id},
             {"status", "online"},
             {"battery_mv", battery},
-            {"rssi_dbm", rssi}
+            {"rssi_dbm", rssi},
+            {"last_seen", "now()"}
         };
-        return send_post(payload.dump());
+        // Upsert nodes table
+        return send_post(url_ + "/rest/v1/nodes?select=id&on_conflict=id", payload.dump(), "POST", true);
     }
 
     bool upload_audio(const std::string& bucket, const std::string& path, const std::vector<uint8_t>& data) {
@@ -78,7 +81,7 @@ public:
     }
 
 private:
-    bool send_post(const std::string& data) {
+    bool send_post(const std::string& full_url, const std::string& data, const std::string& method = "POST", bool upsert = false) {
         CURL* curl = curl_easy_init();
         if (!curl) return false;
 
@@ -88,16 +91,27 @@ private:
         headers = curl_slist_append(headers, auth.c_str());
         std::string api_key = "apikey: " + key_;
         headers = curl_slist_append(headers, api_key.c_str());
+        
+        if (upsert) {
+            headers = curl_slist_append(headers, "Prefer: resolution=merge-duplicates");
+        }
 
-        curl_easy_setopt(curl, CURLOPT_URL, url_.c_str());
+        curl_easy_setopt(curl, CURLOPT_URL, full_url.c_str());
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.c_str());
+        if (method == "PATCH") {
+            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PATCH");
+        }
 
         CURLcode res = curl_easy_perform(curl);
-        bool success = (res == CURLE_OK);
+        long response_code;
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+        
+        bool success = (res == CURLE_OK && response_code >= 200 && response_code < 300);
 
         if (!success) {
-            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+            std::cerr << "[Supabase] Request failed (" << response_code << "): " << curl_easy_strerror(res) << " to " << full_url << std::endl;
+            std::cerr << "[Supabase] Payload: " << data << std::endl;
         }
 
         curl_slist_free_all(headers);

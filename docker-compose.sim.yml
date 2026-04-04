@@ -70,6 +70,7 @@ services:
       - NODE_ROLE=Leaf
       - SIM_LORA_NEIGHBORS=node2
       - MESH_ROUTES=0x0005:0x0002
+      - SIM_DETECTION_TRIGGER=/tmp/chain_trigger
     networks:
       mesh_net:
         ipv4_address: 172.20.0.2

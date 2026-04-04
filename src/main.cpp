@@ -59,27 +59,35 @@ void detection_loop(const telemetry::NodeConfig& config, audio::AudioIn& audio_i
                 buffer.push(std::span(capture_buffer.data(), *result));
             }
 
+            std::optional<float> current_confidence;
+
+            // 1. Check Inference via Buffer
             if (buffer.size() >= 16000) {
                 buffer.read_latest(inference_frame);
-                auto confidence = engine.detect_motoserra(inference_frame);
-                
-                // Mock Trigger via Filesystem (For Simulation)
-                const char* trigger = std::getenv("SIM_DETECTION_TRIGGER");
-                if (trigger) {
-                    if (access(trigger, F_OK) == 0) {
-                        std::cout << "[SIM] Forces Detection Trigger Found!" << std::endl;
-                        confidence = 0.99f;
-                    }
-                }
-
-                if (confidence && *confidence > 0.85f) {
-                    std::cout << "[ALERT] Motoserra detected! Confidence: " << *confidence << std::endl;
-                    telemetry::DetectionEvent event;
-                    event.confidence = *confidence;
-                    event.device_id = std::to_string(config.node_id);
-                    alert_manager.on_detection(event);
+                auto res = engine.detect_motoserra(inference_frame);
+                if (res.has_value()) {
+                    current_confidence = *res;
                 }
             }
+            
+            // 2. Override with Mock Trigger via Filesystem (For Simulation)
+            const char* trigger = std::getenv("SIM_DETECTION_TRIGGER");
+            if (trigger) {
+                if (access(trigger, F_OK) == 0) {
+                    std::cout << "[SIM] Forced Detection Trigger Found!" << std::endl;
+                    current_confidence = 0.99f;
+                    unlink(trigger); // Remove trigger after detection in sim
+                }
+            }
+
+            if (current_confidence && *current_confidence > 0.85f) {
+                std::cout << "[ALERT] Motoserra detected! Confidence: " << *current_confidence << std::endl;
+                telemetry::DetectionEvent event;
+                event.confidence = *current_confidence;
+                event.device_id = std::to_string(config.node_id);
+                alert_manager.on_detection(event);
+            }
+
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
