@@ -1,0 +1,63 @@
+:name: Patronos Forest Guardian Mesh Simulation
+:description: Simulates 5 nodes running the LoRa mesh network and audio ingestion
+
+using sysbus
+
+# Create a shared radio medium for LoRa
+emulation CreateWirelessMedium "wireless"
+
+# Base node definition macro
+macro setup_node
+"""
+    mach create $name
+    machine LoadPlatformDescription @platforms/boards/cortex_a53_console.repl
+    
+    # Add LoRa peripheral using generic SX1276 as stand-in via SPI
+    # Assuming SPI is at a mock address 0x9010000 for cortex_a53
+    machine LoadPlatformDescriptionFromString "spi0: SPI.PL022 @ sysbus 0x9010000 { -> gic@2 }"
+    machine LoadPlatformDescriptionFromString "lora: Wireless.SemtechSX1276 @ spi0"
+    
+    # Connect LoRa to the wireless medium
+    connector Connect sysbus.lora wireless
+    
+    # Exposing a memory region to simulate I2S DMA buffer for audio ingest
+    machine LoadPlatformDescriptionFromString "audio_mock: Memory.MappedMemory @ sysbus 0x3F203000 { size: 0x1000 }"
+
+    showAnalyzer sysbus.uart0
+"""
+
+# Setup 5 nodes
+$name="Gateway_Node5"  
+runMacro $setup_node
+
+$name="Router_Node4"
+runMacro $setup_node
+
+$name="Router_Node3"
+runMacro $setup_node
+
+$name="Router_Node2"
+runMacro $setup_node
+
+$name="Leaf_Node1"
+runMacro $setup_node
+
+# Audio Ingestion python hook
+# We use a python script to simulate pushing wav data to Node 1's audio_mock memory
+python "import sys; sys.path.append('renode')"
+python "import audio_mock_script"
+
+macro inject_chainsaw
+"""
+    # Trigger Python function that writes audio to Node1's sysbus.audio_mock
+    python "audio_mock_script.inject_audio(monitor.Machine, 'assets/mocks/chainsaw_mock.wav')"
+"""
+
+macro reset
+"""
+    # Note: Loading standard Linux user-space ELF natively in bare-metal sysbus causes faults.
+    # To run successfully, a Linux Kernel (Image) + rootfs with the binaries must be loaded.
+    # E.g., sysbus LoadLinuxImage @linux_image.bin
+"""
+
+runMacro $reset
