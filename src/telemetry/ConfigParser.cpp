@@ -16,13 +16,18 @@ NodeConfig ConfigParser::parse_from_env() {
     config.node_id = node_id_env ? static_cast<uint16_t>(std::stoul(node_id_env, nullptr, 0)) : 0x0001;
 
     const char* role_env = getenv("NODE_ROLE");
-    if (role_env && std::string(role_env) == "gateway") {
+    if (role_env && (std::string(role_env) == "Gateway" || std::string(role_env) == "gateway")) {
         config.role = NodeRole::Gateway;
-    } else if (role_env && std::string(role_env) == "router") {
+    } else if (role_env && (std::string(role_env) == "Router" || std::string(role_env) == "router")) {
         config.role = NodeRole::Router;
     } else {
         config.role = NodeRole::Leaf;
     }
+    
+    std::cout << "[SYSTEM] Config: NodeID=0x" << std::hex << config.node_id 
+              << ", Role=" << (config.role == NodeRole::Gateway ? "Gateway" : 
+                             (config.role == NodeRole::Router ? "Router" : "Leaf")) 
+              << std::dec << std::endl;
 
     // 2. Mesh Routing Table
     const char* routes_env = getenv("MESH_ROUTES"); // format: "target:next,target:next"

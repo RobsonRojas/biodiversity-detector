@@ -92,8 +92,14 @@ void detection_loop(const telemetry::NodeConfig& config, audio::AudioIn& audio_i
         }
 
         // 2. SLEEP PHASE (55 seconds)
-        std::cout << "[SYSTEM] Entering 55s Deep Sleep Phase..." << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(55));
+        const char* disable_sleep = std::getenv("SIM_DISABLE_SLEEP");
+        if (disable_sleep && std::string(disable_sleep) == "1") {
+            std::cout << "[SYSTEM] Simulation Mode: Skipping Deep Sleep Phase..." << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        } else {
+            std::cout << "[SYSTEM] Entering 55s Deep Sleep Phase..." << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(55));
+        }
     }
 }
 

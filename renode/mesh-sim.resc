@@ -3,8 +3,9 @@
 
 using sysbus
 
-# Create a shared radio medium for LoRa
-emulation CreateWirelessMedium "wireless"
+# Create a shared radio medium
+# Using common medium for radio simulation in Renode 1.16+
+emulation CreateIEEE802_15_4Medium "wireless"
 
 # Base node definition macro
 macro setup_node
@@ -12,34 +13,38 @@ macro setup_node
     mach create $name
     machine LoadPlatformDescription @platforms/boards/cortex_a53_console.repl
     
-    # Add LoRa peripheral using generic SX1276 as stand-in via SPI
-    # Assuming SPI is at a mock address 0x9010000 for cortex_a53
-    machine LoadPlatformDescriptionFromString "spi0: SPI.PL022 @ sysbus 0x9010000 { -> gic@2 }"
-    machine LoadPlatformDescriptionFromString "lora: Wireless.SemtechSX1276 @ spi0"
+    # Load the ELF binary
+    sysbus LoadELF $bin
     
-    # Connect LoRa to the wireless medium
-    connector Connect sysbus.lora wireless
+    # Enable UART logging to file
+    machine CreateFileBackend $log "uart-backend"
+    connector Connect sysbus.uart0 "uart-backend"
     
-    # Exposing a memory region to simulate I2S DMA buffer for audio ingest
-    machine LoadPlatformDescriptionFromString "audio_mock: Memory.MappedMemory @ sysbus 0x3F203000 { size: 0x1000 }"
-
     showAnalyzer sysbus.uart0
 """
 
+# Define binary path
+$bin = @dist/app/guardian_node
+
 # Setup 5 nodes
 $name="Gateway_Node5"  
+$log = @node5.log
 runMacro $setup_node
 
 $name="Router_Node4"
+$log = @node4.log
 runMacro $setup_node
 
 $name="Router_Node3"
+$log = @node3.log
 runMacro $setup_node
 
 $name="Router_Node2"
+$log = @node2.log
 runMacro $setup_node
 
 $name="Leaf_Node1"
+$log = @node1.log
 runMacro $setup_node
 
 # Audio Ingestion python hook

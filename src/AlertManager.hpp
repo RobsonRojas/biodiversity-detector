@@ -76,8 +76,13 @@ public:
                     pkt->header.hop_limit--;
                     auto next_hop = config_.route_manager.get_next_hop(pkt->header.target_id);
                     if (next_hop && lora_) {
+                        std::cout << "[Mesh] RELAY: src=0x" << std::hex << pkt->header.sender_id 
+                                  << " target=0x" << pkt->header.target_id 
+                                  << " via=0x" << *next_hop << std::dec << std::endl;
                         pkt->header.prev_hop_id = config_.node_id;
                         lora_->send(pkt->serialize());
+                    } else {
+                        std::cout << "[Mesh] DROP: no route to target 0x" << std::hex << pkt->header.target_id << std::dec << std::endl;
                     }
                 }
             }
