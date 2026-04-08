@@ -10,8 +10,6 @@
 #include "utils/compat.hpp"
 #include <memory>
 #include <iostream>
-#include <expected>
-#include <span>
 #include "utils/json.hpp"
 #include <map>
 #include <vector>
@@ -43,7 +41,7 @@ public:
         }
     }
     
-    void on_mesh_receive(std::span<const uint8_t> data) {
+    void on_mesh_receive(guardian::span<const uint8_t> data) {
         auto pkt = telemetry::MeshPacket::deserialize(data);
         if (pkt && pkt->verify_signature()) {
             if (pkt->header.sender_id == config_.node_id) return; 

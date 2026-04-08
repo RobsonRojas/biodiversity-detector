@@ -1,3 +1,4 @@
+#include "../utils/compat.hpp"
 #include "EdgeImpulseWrapper.hpp"
 
 #ifdef EDGE_IMPULSE_ENABLED
@@ -14,11 +15,11 @@ bool EdgeImpulseWrapper::init() {
     return true;
 }
 
-std::vector<DetectionResult> EdgeImpulseWrapper::classify(const int16_t* samples, size_t count) {
+std::vector<DetectionResult> EdgeImpulseWrapper::classify(guardian::span<const int16_t> samples) {
     std::vector<DetectionResult> results;
     
     // 1. Feature Extraction (Stage 3 preprocessing)
-    auto features = extract_features(samples, count);
+    auto features = extract_features(samples.data(), samples.size());
 
     // 2. Run Inference
 #ifdef EDGE_IMPULSE_ENABLED

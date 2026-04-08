@@ -1,6 +1,6 @@
 #pragma once
+#include "../utils/compat.hpp"
 
-#include <vector>
 #include <cstdint>
 #include <cmath>
 
@@ -20,13 +20,8 @@ public:
     /**
      * @brief Calculate RMS of a buffer and determine if Stage 1 threshold is met.
      */
-    bool check_rms_threshold(const std::vector<int16_t>& samples);
-
-    /**
-     * @brief Perform frequency band analysis (Stage 2).
-     * @return true if pattern matches expected chainsaw/harmonics.
-     */
-    bool verify_frequency_pattern(const std::vector<int16_t>& samples);
+    bool check_rms_threshold(guardian::span<const int16_t> samples);
+    bool verify_frequency_pattern(guardian::span<const int16_t> samples);
 
 private:
     float _rms_threshold;

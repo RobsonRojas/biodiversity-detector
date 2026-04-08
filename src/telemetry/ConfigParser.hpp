@@ -1,4 +1,5 @@
 #pragma once
+#include "../utils/compat.hpp"
 
 #include "MeshProtocol.hpp"
 #include "LoRaDriver.hpp"

@@ -13,9 +13,9 @@ public:
     SimulatedLoRaDriver(int port, const std::vector<std::string>& neighbors);
     ~SimulatedLoRaDriver() override;
 
-    std::expected<void, std::error_code> initialize() override;
-    std::expected<void, std::error_code> send(std::span<const uint8_t> data) override;
-    std::expected<size_t, std::error_code> receive(std::span<uint8_t> buffer) override;
+    guardian::expected<void, std::error_code> initialize() override;
+    guardian::expected<void, std::error_code> send(guardian::span<const uint8_t> data) override;
+    guardian::expected<size_t, std::error_code> receive(guardian::span<uint8_t> buffer) override;
 
 private:
     int sock_fd_;

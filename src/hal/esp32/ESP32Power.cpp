@@ -1,3 +1,4 @@
+#include "../../utils/compat.hpp"
 #include "ESP32Power.hpp"
 
 #ifdef ESP_PLATFORM

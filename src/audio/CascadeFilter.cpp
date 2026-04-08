@@ -1,3 +1,4 @@
+#include "../utils/compat.hpp"
 #include "CascadeFilter.hpp"
 // #include <numeric> // Removed to fix lint
 
@@ -14,7 +15,7 @@ static const char* TAG = "CASCADE_FILTER";
 
 CascadeFilter::CascadeFilter(float rms_threshold) : _rms_threshold(rms_threshold) {}
 
-bool CascadeFilter::check_rms_threshold(const std::vector<int16_t>& samples) {
+bool CascadeFilter::check_rms_threshold(guardian::span<const int16_t> samples) {
     if (samples.empty()) return false;
 
     double sum_sq = 0;
@@ -30,7 +31,7 @@ bool CascadeFilter::check_rms_threshold(const std::vector<int16_t>& samples) {
     return normalized_rms > _rms_threshold;
 }
 
-bool CascadeFilter::verify_frequency_pattern(const std::vector<int16_t>& samples) {
+bool CascadeFilter::verify_frequency_pattern(guardian::span<const int16_t> samples) {
     // Stage 2: Basic DSP Frequency match
     // In a real ESP32-S3 implementation, we would use esp-dsp FFT here.
 #ifdef ESP_PLATFORM

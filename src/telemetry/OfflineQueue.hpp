@@ -1,4 +1,5 @@
 #pragma once
+#include "../utils/compat.hpp"
 
 #include <string>
 #include <vector>

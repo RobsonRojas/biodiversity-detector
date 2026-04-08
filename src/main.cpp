@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <vector>
 #include <memory>
-#include <span>
 
 #include "utils/compat.hpp"
 #include "audio/CascadeFilter.hpp"
@@ -43,9 +42,9 @@ void mesh_receive_loop(std::shared_ptr<telemetry::LoRaDriver> lora, AlertManager
     uint8_t rx_buf[1024];
     while (running) {
         if (lora != nullptr) {
-            auto rx_res = lora->receive(rx_buf);
+            auto rx_res = lora->receive(guardian::span<uint8_t>(rx_buf, sizeof(rx_buf)));
             if (rx_res && *rx_res > 0) {
-                alert_manager.on_mesh_receive(std::span<const uint8_t>(rx_buf, *rx_res));
+                alert_manager.on_mesh_receive(guardian::span<const uint8_t>(rx_buf, *rx_res));
             }
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -70,7 +69,7 @@ void detection_loop(const telemetry::NodeConfig& config, audio::AudioIn& audio_i
                 std::cout << "[POWER] Stage 2 Pattern Matched! Starting AI Inference..." << std::endl;
 
                 // --- STAGE 3: AI INFERENCE ---
-                auto classifications = ei_classifier.classify(capture_buffer.data(), capture_buffer.size());
+                auto classifications = ei_classifier.classify(capture_buffer);
                 
                 for (const auto& res : classifications) {
                     if (res.label == "Chainsaw" && res.confidence > 0.85f) {

@@ -1,3 +1,4 @@
+#include "../../utils/compat.hpp"
 #include "I2SCapture.hpp"
 
 #ifdef ESP_PLATFORM

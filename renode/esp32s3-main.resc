@@ -6,20 +6,14 @@ using sysbus
 mach create "ESP32S3_Node1"
 machine LoadPlatformDescription @renode/esp32s3.repl
 
+// Socket bridge for host-side MeshRelay integration
+emulation CreateServerSocketTerminal 34568 "uart-socket"
+connector Connect uart0 "uart-socket"
+
 // Load the binary
-// We use LoadBinary for raw bin or LoadELF for ELF. 
-// Assuming esp32.bin is a raw image for now, but ELF is preferred for symbols.
 $bin?=@dist/esp32.bin
 sysbus LoadBinary $bin 0x40370000
 
-// UART logging to console and file
-showAnalyzer uart0
-machine CreateFileBackend @node1-esp32.log "uart-backend"
-connector Connect uart0 "uart-backend"
-
-// Socket bridge for host-side MeshRelay integration
-emulation CreateServerSocketTerminal 1234 "uart-socket"
-connector Connect uart0 "uart-socket"
 
 // RTC Sleep Mock Hook: Monitor writes to 0x60008000 (RTC_CNTL_STATE0_REG)
 // and print a message for the simulator runner

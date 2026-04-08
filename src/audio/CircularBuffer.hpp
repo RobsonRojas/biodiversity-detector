@@ -1,7 +1,7 @@
 #pragma once
+#include "../utils/compat.hpp"
 
 #include <vector>
-#include <span>
 #include <mutex>
 #include <algorithm>
 
@@ -14,7 +14,7 @@ class CircularBuffer {
 public:
     explicit CircularBuffer(size_t capacity) : buffer_(capacity), head_(0), size_(0) {}
 
-    void push(std::span<const int32_t> samples) {
+    void push(guardian::span<const int32_t> samples) {
         std::lock_guard<std::mutex> lock(mutex_);
         for (auto s : samples) {
             buffer_[head_] = s;
@@ -27,7 +27,7 @@ public:
      * @brief Reads the last N samples from the buffer.
      * @param target span to fill with the most recent samples.
      */
-    void read_latest(std::span<int32_t> target) {
+    void read_latest(guardian::span<int32_t> target) {
         std::lock_guard<std::mutex> lock(mutex_);
         size_t n = target.size();
         if (n > size_) n = size_;

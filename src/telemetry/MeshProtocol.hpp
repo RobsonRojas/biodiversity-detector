@@ -32,7 +32,7 @@ public:
     std::vector<uint8_t> payload;
 
     std::vector<uint8_t> serialize() const;
-    static std::optional<MeshPacket> deserialize(std::span<const uint8_t> data);
+    static std::optional<MeshPacket> deserialize(guardian::span<const uint8_t> data);
 
     bool verify_signature() const {
         // Simplified signature verification

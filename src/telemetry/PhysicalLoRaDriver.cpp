@@ -1,3 +1,4 @@
+#include "../utils/compat.hpp"
 #include "PhysicalLoRaDriver.hpp"
 #include <fcntl.h>
 #include <unistd.h>
@@ -14,21 +15,21 @@ PhysicalLoRaDriver::~PhysicalLoRaDriver() {
     if (spi_fd_ >= 0) close(spi_fd_);
 }
 
-std::expected<void, std::error_code> PhysicalLoRaDriver::initialize() {
+guardian::expected<void, std::error_code> PhysicalLoRaDriver::initialize() {
     std::cout << "[LoRa] Initializing Physical SX1262 on " << spi_dev_path_ << "..." << std::endl;
     
     spi_fd_ = open(spi_dev_path_.c_str(), O_RDWR);
     if (spi_fd_ < 0) {
-        return std::unexpected(std::make_error_code(std::errc::no_such_file_or_directory));
+        return guardian::unexpected(std::make_error_code(std::errc::no_such_file_or_directory));
     }
 
     uint8_t mode = 0;
     uint8_t bits = 8;
     uint32_t speed = 2000000; // 2MHz
 
-    if (ioctl(spi_fd_, SPI_IOC_WR_MODE, &mode) < 0) return std::unexpected(std::make_error_code(std::errc::invalid_argument));
-    if (ioctl(spi_fd_, SPI_IOC_WR_BITS_PER_WORD, &bits) < 0) return std::unexpected(std::make_error_code(std::errc::invalid_argument));
-    if (ioctl(spi_fd_, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0) return std::unexpected(std::make_error_code(std::errc::invalid_argument));
+    if (ioctl(spi_fd_, SPI_IOC_WR_MODE, &mode) < 0) return guardian::unexpected(std::make_error_code(std::errc::invalid_argument));
+    if (ioctl(spi_fd_, SPI_IOC_WR_BITS_PER_WORD, &bits) < 0) return guardian::unexpected(std::make_error_code(std::errc::invalid_argument));
+    if (ioctl(spi_fd_, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0) return guardian::unexpected(std::make_error_code(std::errc::invalid_argument));
 
     reset();
     wait_busy();
@@ -37,8 +38,8 @@ std::expected<void, std::error_code> PhysicalLoRaDriver::initialize() {
     return {};
 }
 
-std::expected<void, std::error_code> PhysicalLoRaDriver::send(std::span<const uint8_t> data) {
-    if (spi_fd_ < 0) return std::unexpected(std::make_error_code(std::errc::not_connected));
+guardian::expected<void, std::error_code> PhysicalLoRaDriver::send(guardian::span<const uint8_t> data) {
+    if (spi_fd_ < 0) return guardian::unexpected(std::make_error_code(std::errc::not_connected));
     
     std::cout << "[LoRa] Sending physical packet (" << data.size() << " bytes) via SPI...\n";
     wait_busy();
@@ -48,12 +49,12 @@ std::expected<void, std::error_code> PhysicalLoRaDriver::send(std::span<const ui
     
     // Command 0x85: SetTx (timeout 0 = infinite/manual)
     uint8_t timeout[3] = {0, 0, 0};
-    write_command(0x85, std::span<const uint8_t>(timeout, 3));
+    write_command(0x85, guardian::span<const uint8_t>(timeout, 3));
     
     return {};
 }
 
-std::expected<size_t, std::error_code> PhysicalLoRaDriver::receive(std::span<uint8_t> buffer) {
+guardian::expected<size_t, std::error_code> PhysicalLoRaDriver::receive(guardian::span<uint8_t> buffer) {
     // Basic polling mock for hardware testing
     return 0;
 }
@@ -67,7 +68,7 @@ void PhysicalLoRaDriver::wait_busy() {
     // Poll BUSY pin: while(gpio_read(busy_pin_) == HIGH);
 }
 
-void PhysicalLoRaDriver::write_command(uint8_t op, std::span<const uint8_t> data) {
+void PhysicalLoRaDriver::write_command(uint8_t op, guardian::span<const uint8_t> data) {
     struct spi_ioc_transfer tr[2];
     memset(tr, 0, sizeof(tr));
 

@@ -1,3 +1,4 @@
+#include "../utils/compat.hpp"
 #include "RTCStore.hpp"
 #include <cstring>
 

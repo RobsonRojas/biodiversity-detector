@@ -1,4 +1,5 @@
 #pragma once
+#include "../utils/compat.hpp"
 
 #include "LoRaDriver.hpp"
 #include <linux/spi/spidev.h>
@@ -11,15 +12,15 @@ public:
     PhysicalLoRaDriver(const std::string& spi_dev, int nss_pin, int busy_pin, int dio1_pin, int rst_pin);
     ~PhysicalLoRaDriver() override;
 
-    std::expected<void, std::error_code> initialize() override;
-    std::expected<void, std::error_code> send(std::span<const uint8_t> data) override;
-    std::expected<size_t, std::error_code> receive(std::span<uint8_t> buffer) override;
+    guardian::expected<void, std::error_code> initialize() override;
+    guardian::expected<void, std::error_code> send(guardian::span<const uint8_t> data) override;
+    guardian::expected<size_t, std::error_code> receive(guardian::span<uint8_t> buffer) override;
 
 private:
     void reset();
     void wait_busy();
-    void write_command(uint8_t op, std::span<const uint8_t> data);
-    void read_command(uint8_t op, std::span<uint8_t> data);
+    void write_command(uint8_t op, guardian::span<const uint8_t> data);
+    void read_command(uint8_t op, guardian::span<uint8_t> data);
 
     std::string spi_dev_path_;
     int spi_fd_ = -1;

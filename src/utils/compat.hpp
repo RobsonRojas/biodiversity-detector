@@ -1,19 +1,26 @@
 /**
  * @file compat.hpp
- * @brief Compatibility shim for modern C++ features (C++ 23/26) required by the project.
+ * @brief Compatibility shim for modern C++ features.
+ * 
+ * This file provides standalone implementations of expected, span, and format
+ * to ensure consistent behavior across compilers and environments (ESP-IDF, Linux, Renode).
  */
 
 #pragma once
 
 #include <system_error>
 #include <variant>
+#include <vector>
+#include <cstddef>
+#include <type_traits>
+#include <string>
+#include <string_view>
+#include <iostream>
+#include <algorithm>
 
-#if defined(__cpp_lib_expected) && __cpp_lib_expected >= 202202L
-#include <expected>
-#else
-#if 0 // Disabled due to redefinition issues, relying on compiler or providing custom namespace
-#else
-namespace guardian::compat {
+namespace guardian {
+
+    // --- EXPECTED ---
     template <typename E>
     struct unexpected {
         E error;
@@ -30,7 +37,9 @@ namespace guardian::compat {
         
         bool has_value() const { return has_val_; }
         T& operator*() { return val_; }
+        const T& operator*() const { return val_; }
         T* operator->() { return &val_; }
+        const T* operator->() const { return &val_; }
         T& value() { return val_; }
         const E& error() const { return err_; }
         explicit operator bool() const { return has_val_; }
@@ -40,46 +49,78 @@ namespace guardian::compat {
         E err_;
         bool has_val_;
     };
-}
-namespace std {
-    using guardian::compat::unexpected;
-    using guardian::compat::expected;
-}
-#endif
-#endif
 
-#if defined(__cpp_lib_span) && __cpp_lib_span >= 202002L
-#include <span>
-#else
-#include <vector>
-#include <cstddef>
-namespace std {
-    template <typename T>
+    template <typename E>
+    class expected<void, E> {
+    public:
+        expected() : has_val_(true) {}
+        expected(const E& e) : err_(e), has_val_(false) {}
+        expected(unexpected<E> un) : err_(un.error), has_val_(false) {}
+        
+        bool has_value() const { return has_val_; }
+        void operator*() {}
+        void value() {}
+        const E& error() const { return err_; }
+        explicit operator bool() const { return has_val_; }
+
+    private:
+        E err_;
+        bool has_val_;
+    };
+
+    // --- SPAN ---
+    template <typename T, size_t Extent = (size_t)-1>
     struct span {
         T* data_;
         size_t size_;
+        
         span() : data_(nullptr), size_(0) {}
-        span(T* d, size_t s) : data_(d), size_(s) {}
-        span(std::vector<T>& v) : data_(v.data()), size_(v.size()) {}
+        span(T* ptr, size_t s) : data_(ptr), size_(s) {}
+        
+        template<typename Container, typename = decltype(std::declval<Container>().data())>
+        span(Container& c) : data_(c.data()), size_(c.size()) {}
+
+        template<typename Container, typename = decltype(std::declval<const Container>().data())>
+        span(const Container& c) : data_(const_cast<T*>(c.data())), size_(c.size()) {}
+
         T* data() const { return data_; }
         size_t size() const { return size_; }
         size_t size_bytes() const { return size_ * sizeof(T); }
         bool empty() const { return size_ == 0; }
+        
+        T& operator[](size_t i) { return data_[i]; }
+        const T& operator[](size_t i) const { return data_[i]; }
+        
         T* begin() const { return data_; }
         T* end() const { return data_ + size_; }
-    };
-}
-#endif
 
-#if __has_include(<format>)
+        span<T, (size_t)-1> subspan(size_t offset, size_t count = (size_t)-1) const {
+            size_t actual_count = (count == (size_t)-1) ? (size_ - offset) : count;
+            return span<T, (size_t)-1>(data_ + offset, actual_count);
+        }
+    };
+
+    // --- FORMAT ---
+}
+
+// Conditionally include <format> for std::vformat if available, otherwise fallback
+#if __has_include(<format>) && __cplusplus >= 202002L
 #include <format>
+namespace guardian {
+    template<typename... Args>
+    std::string format(std::string_view fmt, Args&&... args) {
+        try {
+            return std::vformat(fmt, std::make_format_args(args...));
+        } catch (...) {
+            return std::string(fmt);
+        }
+    }
+}
 #else
-#include <string>
-#include <string_view>
-namespace std {
+namespace guardian {
     template<typename... Args>
     std::string format(std::string_view fmt, [[maybe_unused]] Args&&... args) {
-        return std::string(fmt); // Dummy format for linting
+        return std::string(fmt); // Barebones fallback
     }
 }
 #endif

@@ -8,7 +8,7 @@ import os
 # Configuration
 RENODE_PATH = "renode"
 RESC_PATH = "renode/esp32s3-main.resc"
-UART_PORT = 1234
+UART_PORT = 34568
 UDP_LORA_PORT = 5000
 UDP_IP = "127.0.0.1" # For local simulation bridging
 
@@ -26,7 +26,9 @@ class RenodeRunner:
         # 1. Start Renode headlessly
         self.process = subprocess.Popen([
             "renode", 
-            "--headless", 
+            "--disable-gui", 
+            "--hide-monitor",
+            "--port", "34567",
             "-e", f"i @{RESC_PATH}; start"
         ])
         
@@ -36,7 +38,7 @@ class RenodeRunner:
         
         # 3. Connect to Renode UART Socket
         print("[RenodeRunner] Waiting for Renode UART socket...")
-        time.sleep(5) # Wait for boot
+        time.sleep(10) # Wait for boot
         self.uart_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.uart_sock.connect(("localhost", UART_PORT))
         

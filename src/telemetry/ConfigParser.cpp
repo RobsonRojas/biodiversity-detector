@@ -1,3 +1,4 @@
+#include "../utils/compat.hpp"
 #include "ConfigParser.hpp"
 #include "SimulatedLoRaDriver.hpp"
 #include "PhysicalLoRaDriver.hpp"

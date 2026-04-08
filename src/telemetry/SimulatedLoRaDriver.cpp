@@ -20,9 +20,9 @@ SimulatedLoRaDriver::~SimulatedLoRaDriver() {
     }
 }
 
-std::expected<void, std::error_code> SimulatedLoRaDriver::initialize() {
+guardian::expected<void, std::error_code> SimulatedLoRaDriver::initialize() {
     if ((sock_fd_ = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        return std::unexpected(std::make_error_code(std::errc::io_error));
+        return guardian::unexpected(std::make_error_code(std::errc::io_error));
     }
 
     memset(&servaddr_, 0, sizeof(servaddr_));
@@ -31,15 +31,15 @@ std::expected<void, std::error_code> SimulatedLoRaDriver::initialize() {
     servaddr_.sin_port = htons(port_);
 
     if (bind(sock_fd_, (const struct sockaddr *)&servaddr_, sizeof(servaddr_)) < 0) {
-        return std::unexpected(std::make_error_code(std::errc::address_in_use));
+        return guardian::unexpected(std::make_error_code(std::errc::address_in_use));
     }
 
     std::cout << "[SimulatedLoRa] Initialized on port " << port_ << " with " << neighbors_.size() << " neighbors.\n";
     return {};
 }
 
-std::expected<void, std::error_code> SimulatedLoRaDriver::send(std::span<const uint8_t> data) {
-    if (sock_fd_ == -1) return std::unexpected(std::make_error_code(std::errc::not_connected));
+guardian::expected<void, std::error_code> SimulatedLoRaDriver::send(guardian::span<const uint8_t> data) {
+    if (sock_fd_ == -1) return guardian::unexpected(std::make_error_code(std::errc::not_connected));
 
     for (const auto& neighbor : neighbors_) {
         struct sockaddr_in dest;
@@ -63,8 +63,8 @@ std::expected<void, std::error_code> SimulatedLoRaDriver::send(std::span<const u
     return {};
 }
 
-std::expected<size_t, std::error_code> SimulatedLoRaDriver::receive(std::span<uint8_t> buffer) {
-    if (sock_fd_ == -1) return std::unexpected(std::make_error_code(std::errc::not_connected));
+guardian::expected<size_t, std::error_code> SimulatedLoRaDriver::receive(guardian::span<uint8_t> buffer) {
+    if (sock_fd_ == -1) return guardian::unexpected(std::make_error_code(std::errc::not_connected));
 
     struct sockaddr_in src;
     socklen_t len = sizeof(src);
@@ -75,7 +75,7 @@ std::expected<size_t, std::error_code> SimulatedLoRaDriver::receive(std::span<ui
         inet_ntop(AF_INET, &src.sin_addr, sender_ip, INET_ADDRSTRLEN);
         std::cout << "[SimulatedLoRa] RECV " << n << " bytes from " << sender_ip << std::endl;
     } else {
-        return std::unexpected(std::make_error_code(std::errc::io_error));
+        return guardian::unexpected(std::make_error_code(std::errc::io_error));
     }
 
     return static_cast<size_t>(n);

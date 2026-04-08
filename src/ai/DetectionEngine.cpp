@@ -1,3 +1,4 @@
+#include "../utils/compat.hpp"
 #include "DetectionEngine.hpp"
 #include <random>
 #include <iostream>
@@ -9,7 +10,7 @@ DetectionEngine::DetectionEngine() : initialized_(false) {}
 
 DetectionEngine::~DetectionEngine() {}
 
-std::expected<void, std::error_code> DetectionEngine::initialize(const std::string& model_path) {
+guardian::expected<void, std::error_code> DetectionEngine::initialize(const std::string& model_path) {
     // In a real implementation:
     // 1. Load model using tflite::GetModel(model_path)
     // 2. Initialize MicroInterpreter
@@ -19,9 +20,9 @@ std::expected<void, std::error_code> DetectionEngine::initialize(const std::stri
     return {};
 }
 
-std::expected<float, std::error_code> DetectionEngine::detect_motoserra(std::span<const int32_t> audio_frame) {
+guardian::expected<float, std::error_code> DetectionEngine::detect_motoserra(guardian::span<const int32_t> audio_frame) {
     if (!initialized_) {
-        return std::unexpected(std::make_error_code(std::errc::not_connected));
+        return guardian::unexpected(std::make_error_code(std::errc::not_connected));
     }
 
     // REALISTIC MOCK FOR INTEGRATION TESTING:

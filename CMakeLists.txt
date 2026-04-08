@@ -20,7 +20,9 @@ find_package(CURL REQUIRED)
 # Core Guarding Logic
 add_library(GuardianCore
     src/audio/AudioIn.cpp
+    src/audio/CascadeFilter.cpp
     src/ai/DetectionEngine.cpp
+    src/ai/EdgeImpulseWrapper.cpp
     src/AlertManager.cpp
     src/telemetry/LoRaDriver.cpp
     src/telemetry/SimulatedLoRaDriver.cpp
@@ -28,6 +30,9 @@ add_library(GuardianCore
     src/telemetry/MeshProtocol.cpp
     src/telemetry/ConfigParser.cpp
     src/telemetry/TelegramClient.cpp
+    src/telemetry/RTCStore.cpp
+    src/hal/esp32/ESP32Power.cpp
+    src/hal/esp32/I2SCapture.cpp
 )
 target_link_libraries(GuardianCore PUBLIC CURL::libcurl)
 

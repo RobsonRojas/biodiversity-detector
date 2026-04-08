@@ -1,3 +1,4 @@
+#include "../utils/compat.hpp"
 #include "MeshProtocol.hpp"
 #include <cstring>
 
@@ -13,7 +14,7 @@ std::vector<uint8_t> MeshPacket::serialize() const {
     return result;
 }
 
-std::optional<MeshPacket> MeshPacket::deserialize(std::span<const uint8_t> data) {
+std::optional<MeshPacket> MeshPacket::deserialize(guardian::span<const uint8_t> data) {
     if (data.size() < sizeof(MeshHeader)) return std::nullopt;
     MeshPacket pkt;
     std::memcpy(&pkt.header, data.data(), sizeof(MeshHeader));

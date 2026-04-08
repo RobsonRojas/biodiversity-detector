@@ -15,7 +15,7 @@ struct DetectionEvent {
 class AlertFormatter {
 public:
     static std::string format_detection(const DetectionEvent& event) {
-        return std::format(
+        return guardian::format(
             "ALERT:Motoserra node:{} conf:{:.2f}",
             event.device_id,
             event.confidence
