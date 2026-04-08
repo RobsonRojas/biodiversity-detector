@@ -1,6 +1,6 @@
 # Capability: mesh-network-simulator
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: virtual-lora-air
 The simulator MUST provide a UDP-based communication layer that mimics LoRa packet exchange.
