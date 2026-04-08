@@ -1,0 +1,37 @@
+:name: ESP32-S3 Cascaded Firmware Simulation
+:description: Runs the Stage 1 -> Stage 2 -> Stage 3 cascaded detection loop
+
+using sysbus
+
+mach create "ESP32S3_Node1"
+machine LoadPlatformDescription @renode/esp32s3.repl
+
+// Load the binary
+// We use LoadBinary for raw bin or LoadELF for ELF. 
+// Assuming esp32.bin is a raw image for now, but ELF is preferred for symbols.
+$bin?=@dist/esp32.bin
+sysbus LoadBinary $bin 0x40370000
+
+// UART logging to console and file
+showAnalyzer uart0
+machine CreateFileBackend @node1-esp32.log "uart-backend"
+connector Connect uart0 "uart-backend"
+
+// Socket bridge for host-side MeshRelay integration
+emulation CreateServerSocketTerminal 1234 "uart-socket"
+connector Connect uart0 "uart-socket"
+
+// RTC Sleep Mock Hook: Monitor writes to 0x60008000 (RTC_CNTL_STATE0_REG)
+// and print a message for the simulator runner
+sysbus AddWatchpointHook 0x60008000 4 Write "antigravity.Log(LogLevel.Info, 'FIRMWARE_STATE: SLEEP_ENTRY')"
+
+// Python script for audio injection
+python "import sys; sys.path.append('renode')"
+python "import audio_mock_script"
+
+macro inject_chainsaw
+"""
+    python "audio_mock_script.inject_audio(monitor.Machine, 'assets/mocks/chainsaw_mock.wav')"
+"""
+
+echo "ESP32-S3 Simulation Ready. Type 'start' to begin."

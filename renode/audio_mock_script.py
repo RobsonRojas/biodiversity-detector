@@ -12,15 +12,17 @@ def inject_audio(machine, wav_path):
             wav_data = f.read()
             
         # Write wav data to the mocked I2S memory region
-        # 0x3F203000 is our audio_mock base
+        # 0x3F203000 matches our esp32s3.repl definition
         base_addr = 0x3F203000
         length = min(len(wav_data), 0x1000) # up to 4KB for mock trigger
+        
+        print(f"[Audio Ingest] Writing {length} bytes to simulated I2S memory at {hex(base_addr)}...")
         
         # In a real environment, we'd trigger an interrupt here.
         # We just write it directly to sysbus
         for i in range(length):
             machine.SystemBus.WriteByte(base_addr + i, wav_data[i])
             
-        print(f"[Audio Ingest] Successfully injected {length} bytes. Firmware should wake up and process.")
+        print(f"[Audio Ingest] Injection complete. Simulated DMA should now trigger Stage 1/2.")
     except Exception as e:
         print(f"[Audio Ingest] Failure: {e}")

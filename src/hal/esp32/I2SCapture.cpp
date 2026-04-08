@@ -45,6 +45,20 @@ void I2SCapture::init(uint32_t sample_rate) {
 
 size_t I2SCapture::read(std::vector<int16_t>& buffer) {
     size_t bytes_read = 0;
+
+    // --- RENODE SIMULATION HOOK ---
+    // If we are in simulation mode (detected by a non-zero value at our mock address),
+    // read from there instead of real hardware.
+    volatile int16_t* sim_buffer = (volatile int16_t*)0x3F203000;
+    if (sim_buffer[0] != 0) {
+        size_t to_read = std::min(buffer.size(), (size_t)2048);
+        for (size_t i = 0; i < to_read; ++i) {
+            buffer[i] = sim_buffer[i];
+            sim_buffer[i] = 0; // Clear after read to simulate DMA depletion
+        }
+        return to_read;
+    }
+
 #ifdef ESP_PLATFORM
     // ESP32 specifically requires reading into byte array then casting
     i2s_read(I2S_NUM, buffer.data(), buffer.size() * sizeof(int16_t), &bytes_read, portMAX_DELAY);

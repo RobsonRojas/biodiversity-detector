@@ -71,10 +71,12 @@ services:
     environment:
       - NODE_ID=0x0001
       - NODE_ROLE=Leaf
+      - BACKEND=renode
       - SIM_DISABLE_SLEEP=1
       - SIM_LORA_NEIGHBORS=node2
       - MESH_ROUTES=0x0005:0x0002
       - SIM_DETECTION_TRIGGER=/tmp/chain_trigger
+    command: python3 scripts/renode_runner.py
     networks:
       mesh_net:
         ipv4_address: 172.20.0.2
