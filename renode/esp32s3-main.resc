@@ -7,7 +7,7 @@ mach create "ESP32S3_Node1"
 machine LoadPlatformDescription @renode/esp32s3.repl
 
 // Socket bridge for host-side MeshRelay integration
-emulation CreateServerSocketTerminal 34568 "uart-socket"
+emulation CreateServerSocketTerminal 45679 "uart-socket"
 connector Connect uart0 "uart-socket"
 
 // Load the binary

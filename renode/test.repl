@@ -1,0 +1,6 @@
+// Minimal test repl
+ram: Memory.MappedMemory @ sysbus 0x0
+    size: 0x1000
+
+uart0: UART.NS16550 @ sysbus 0x1000
+    size: 0x100

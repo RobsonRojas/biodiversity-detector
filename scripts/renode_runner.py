@@ -8,7 +8,7 @@ import os
 # Configuration
 RENODE_PATH = "renode"
 RESC_PATH = "renode/esp32s3-main.resc"
-UART_PORT = 34568
+UART_PORT = 45679
 UDP_LORA_PORT = 5000
 UDP_IP = "127.0.0.1" # For local simulation bridging
 
@@ -28,7 +28,7 @@ class RenodeRunner:
             "renode", 
             "--disable-gui", 
             "--hide-monitor",
-            "--port", "34567",
+            "--port", "45678",
             "-e", f"i @{RESC_PATH}; start"
         ])
         
