@@ -5,13 +5,15 @@
 
 #pragma once
 
-#if __has_include(<expected>)
-#include <expected>
-#else
 #include <system_error>
 #include <variant>
 
-namespace std {
+#if defined(__cpp_lib_expected) && __cpp_lib_expected >= 202202L
+#include <expected>
+#else
+#if 0 // Disabled due to redefinition issues, relying on compiler or providing custom namespace
+#else
+namespace guardian::compat {
     template <typename E>
     struct unexpected {
         E error;
@@ -39,9 +41,14 @@ namespace std {
         bool has_val_;
     };
 }
+namespace std {
+    using guardian::compat::unexpected;
+    using guardian::compat::expected;
+}
+#endif
 #endif
 
-#if __has_include(<span>)
+#if defined(__cpp_lib_span) && __cpp_lib_span >= 202002L
 #include <span>
 #else
 #include <vector>

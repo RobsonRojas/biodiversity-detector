@@ -1,19 +1,27 @@
-#include "utils/compat.hpp"
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <atomic>
+#include <cstdlib>
+#include <unistd.h>
+#include <vector>
+#include <memory>
+#include <span>
+
+#include "utils/compat.hpp"
+#include "audio/CascadeFilter.hpp"
+#include "ai/EdgeImpulseWrapper.hpp"
+#include "hal/esp32/ESP32Power.hpp"
+#include "telemetry/RTCStore.hpp"
 #include "audio/AudioIn.hpp"
 #include "audio/CircularBuffer.hpp"
 #include "ai/DetectionEngine.hpp"
 #include "AlertManager.hpp"
 #include "telemetry/ConfigParser.hpp"
 #include "telemetry/LoRaDriver.hpp"
-#include "telemetry/LoRaDriver.hpp"
 #include "telemetry/SupabaseClient.hpp"
-#include <atomic>
-#include <cstdlib>
-#include <unistd.h>
-#include <thread>
+#include "telemetry/TelegramClient.hpp"
+#include "telemetry/OfflineQueue.hpp"
 
 using namespace guardian;
 
@@ -45,60 +53,50 @@ void mesh_receive_loop(std::shared_ptr<telemetry::LoRaDriver> lora, AlertManager
 }
 
 void detection_loop(const telemetry::NodeConfig& config, audio::AudioIn& audio_in, audio::CircularBuffer& buffer, ai::DetectionEngine& engine, AlertManager& alert_manager, std::shared_ptr<telemetry::LoRaDriver> lora) {
-    std::vector<int32_t> capture_buffer(4096);
-    std::vector<int32_t> inference_frame(16000);
+    audio::CascadeFilter cascade(0.01f); // 1% RMS threshold
+    ai::EdgeImpulseWrapper ei_classifier;
+    std::vector<int16_t> capture_buffer(4096);
 
     while (running) {
-        // 1. ACTIVE PHASE (5 seconds)
-        auto start = std::chrono::steady_clock::now();
-        std::cout << "[SYSTEM] Starting 5s Active Phase..." << std::endl;
+        // --- STAGE 1: QUIET / LOW POWER ---
+        std::cout << "[POWER] Stage 1: Monitoring RMS Ambient level..." << std::endl;
+        auto result = audio_in.read_int16(capture_buffer); // Read low-rate for RMS
+        
+        if (result && cascade.check_rms_threshold(capture_buffer)) {
+            std::cout << "[POWER] Stage 1 Triggered! Waking for DSP Verification..." << std::endl;
 
-        while (std::chrono::steady_clock::now() - start < std::chrono::seconds(5)) {
-            auto result = audio_in.read(capture_buffer);
-            if (result) {
-                buffer.push(std::span(capture_buffer.data(), *result));
-            }
+            // --- STAGE 2: DSP VERIFICATION ---
+            if (cascade.verify_frequency_pattern(capture_buffer)) {
+                std::cout << "[POWER] Stage 2 Pattern Matched! Starting AI Inference..." << std::endl;
 
-            std::optional<float> current_confidence;
+                // --- STAGE 3: AI INFERENCE ---
+                auto classifications = ei_classifier.classify(capture_buffer.data(), capture_buffer.size());
+                
+                for (const auto& res : classifications) {
+                    if (res.label == "Chainsaw" && res.confidence > 0.85f) {
+                        std::cout << "[ALERT] " << res.label << " detected! Confidence: " << res.confidence << std::endl;
+                        
+                        // Log to RTC for persistence
+                        telemetry::RTCStore::log_event(res.label, res.confidence);
 
-            // 1. Check Inference via Buffer
-            if (buffer.size() >= 16000) {
-                buffer.read_latest(inference_frame);
-                auto res = engine.detect_motoserra(inference_frame);
-                if (res.has_value()) {
-                    current_confidence = *res;
+                        // Telemetry
+                        telemetry::DetectionEvent event;
+                        event.confidence = res.confidence;
+                        event.device_id = std::to_string(config.node_id);
+                        alert_manager.on_detection(event);
+                    }
                 }
+            } else {
+                std::cout << "[POWER] Stage 2 Rejected. Returning to Stage 1 Sleep..." << std::endl;
             }
-            
-            // 2. Override with Mock Trigger via Filesystem (For Simulation)
-            const char* trigger = std::getenv("SIM_DETECTION_TRIGGER");
-            if (trigger) {
-                if (access(trigger, F_OK) == 0) {
-                    std::cout << "[SIM] Forced Detection Trigger Found!" << std::endl;
-                    current_confidence = 0.99f;
-                    unlink(trigger); // Remove trigger after detection in sim
-                }
-            }
-
-            if (current_confidence && *current_confidence > 0.85f) {
-                std::cout << "[ALERT] Motoserra detected! Confidence: " << *current_confidence << std::endl;
-                telemetry::DetectionEvent event;
-                event.confidence = *current_confidence;
-                event.device_id = std::to_string(config.node_id);
-                alert_manager.on_detection(event);
-            }
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
-        // 2. SLEEP PHASE (55 seconds)
+        // Handle sleep behavior
         const char* disable_sleep = std::getenv("SIM_DISABLE_SLEEP");
         if (disable_sleep && std::string(disable_sleep) == "1") {
-            std::cout << "[SYSTEM] Simulation Mode: Skipping Deep Sleep Phase..." << std::endl;
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         } else {
-            std::cout << "[SYSTEM] Entering 55s Deep Sleep Phase..." << std::endl;
-            std::this_thread::sleep_for(std::chrono::seconds(55));
+            hal::ESP32Power::enter_deep_sleep();
         }
     }
 }
