@@ -57,22 +57,32 @@ void detection_loop(const telemetry::NodeConfig& config, audio::AudioIn& audio_i
     std::vector<int16_t> capture_buffer(4096);
 
     while (running) {
-        // --- STAGE 1: QUIET / LOW POWER ---
-        std::cout << "[POWER] Stage 1: Monitoring RMS Ambient level..." << std::endl;
-        auto result = audio_in.read_int16(capture_buffer); // Read low-rate for RMS
+        // --- STAGE 1 & 2: MOCK BYPASS FOR SIMULATION ---
+        const char* node_id_env = std::getenv("NODE_ID");
+        std::string node_id_str = node_id_env ? node_id_env : "unknown";
+        std::string chainsaw_trig_path = "/tmp/" + node_id_str + "_chainsaw_trigger";
+        std::string frog_trig_path = "/tmp/" + node_id_str + "_frog_trigger";
+        bool trigger_active = (::access(chainsaw_trig_path.c_str(), F_OK) == 0) || (::access(frog_trig_path.c_str(), F_OK) == 0);
         
-        if (result && cascade.check_rms_threshold(capture_buffer)) {
-            std::cout << "[POWER] Stage 1 Triggered! Waking for DSP Verification..." << std::endl;
+        auto result = audio_in.read_int16(capture_buffer); // Read low-rate for RMS
+        if (trigger_active || (result && cascade.check_rms_threshold(capture_buffer))) {
+            if (trigger_active) {
+                std::cout << "[SIM] Trigger detected! Bypassing Stage 1 & 2..." << std::endl;
+            } else {
+                std::cout << "[POWER] Stage 1 Triggered! Waking for DSP Verification..." << std::endl;
+            }
 
             // --- STAGE 2: DSP VERIFICATION ---
-            if (cascade.verify_frequency_pattern(capture_buffer)) {
-                std::cout << "[POWER] Stage 2 Pattern Matched! Starting AI Inference..." << std::endl;
+            if (trigger_active || cascade.verify_frequency_pattern(capture_buffer)) {
+                if (!trigger_active) {
+                    std::cout << "[POWER] Stage 2 Pattern Matched! Starting AI Inference..." << std::endl;
+                }
 
                 // --- STAGE 3: AI INFERENCE ---
                 auto classifications = ei_classifier.classify(capture_buffer);
                 
                 for (const auto& res : classifications) {
-                    if (res.label == "Chainsaw" && res.confidence > 0.85f) {
+                    if (res.label != "Background" && res.confidence > 0.80f) {
                         std::cout << "[ALERT] " << res.label << " detected! Confidence: " << res.confidence << std::endl;
                         
                         // Log to RTC for persistence
@@ -80,6 +90,7 @@ void detection_loop(const telemetry::NodeConfig& config, audio::AudioIn& audio_i
 
                         // Telemetry
                         telemetry::DetectionEvent event;
+                        event.label = res.label;
                         event.confidence = res.confidence;
                         event.device_id = std::to_string(config.node_id);
                         alert_manager.on_detection(event);

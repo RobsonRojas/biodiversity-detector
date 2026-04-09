@@ -42,22 +42,31 @@ guardian::expected<void, std::error_code> SimulatedLoRaDriver::send(guardian::sp
     if (sock_fd_ == -1) return guardian::unexpected(std::make_error_code(std::errc::not_connected));
 
     for (const auto& neighbor : neighbors_) {
+        std::string host = neighbor;
+        int port = port_; // Default to local port if not specified
+        
+        size_t colon = neighbor.find(':');
+        if (colon != std::string::npos) {
+            host = neighbor.substr(0, colon);
+            port = std::stoi(neighbor.substr(colon + 1));
+        }
+
         struct sockaddr_in dest;
         memset(&dest, 0, sizeof(dest));
         dest.sin_family = AF_INET;
-        dest.sin_port = htons(port_);
+        dest.sin_port = htons(port);
         
-        struct hostent *he = gethostbyname(neighbor.c_str());
+        struct hostent *he = gethostbyname(host.c_str());
         if (he) {
             memcpy(&dest.sin_addr, he->h_addr_list[0], he->h_length);
             ssize_t sent = sendto(sock_fd_, data.data(), data.size(), 0, (const struct sockaddr *)&dest, sizeof(dest));
             if (sent >= 0) {
-                std::cout << "[SimulatedLoRa] SENT " << sent << " bytes to " << neighbor << std::endl;
+                std::cout << "[SimulatedLoRa] SENT " << sent << " bytes to " << host << ":" << port << std::endl;
             } else {
                 std::cerr << "[SimulatedLoRa] Failed to send to " << neighbor << ": " << strerror(errno) << std::endl;
             }
         } else {
-            std::cerr << "[SimulatedLoRa] Could not resolve neighbor: " << neighbor << "\n";
+            std::cerr << "[SimulatedLoRa] Could not resolve neighbor host: " << host << "\n";
         }
     }
     return {};

@@ -1,5 +1,6 @@
 #include "../utils/compat.hpp"
 #include "EdgeImpulseWrapper.hpp"
+#include <unistd.h>
 
 #ifdef EDGE_IMPULSE_ENABLED
 // #include "edge-impulse-sdk/classifier/ei_classifier_porting.h"
@@ -30,9 +31,21 @@ std::vector<DetectionResult> EdgeImpulseWrapper::classify(guardian::span<const i
     // run_classifier(&signal, &result, false);
     // ... parse results ...
 #else
-    // Mock inference
-    results.push_back({"Chainsaw", 0.92f});
-    results.push_back({"Background", 0.05f});
+    // Mock inference with node-specific simulator triggers
+    const char* node_id = std::getenv("NODE_ID");
+    std::string id_str = node_id ? node_id : "unknown";
+    std::string chainsaw_trig = "/tmp/" + id_str + "_chainsaw_trigger";
+    std::string frog_trig = "/tmp/" + id_str + "_frog_trigger";
+
+    if (::access(chainsaw_trig.c_str(), F_OK) == 0) {
+        results.push_back({"Chainsaw", 0.98f});
+        ::unlink(chainsaw_trig.c_str());
+    } else if (::access(frog_trig.c_str(), F_OK) == 0) {
+        results.push_back({"frog:Boana geographica", 0.95f});
+        ::unlink(frog_trig.c_str());
+    } else {
+        results.push_back({"Background", 0.05f});
+    }
 #endif
 
     return results;

@@ -9,6 +9,8 @@ services:
     environment:
       - NODE_ID=0x0005
       - NODE_ROLE=Gateway
+      - SIM_LAT=-3.0016
+      - SIM_LON=-59.9405
       - SIM_DISABLE_SLEEP=1
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
@@ -26,6 +28,8 @@ services:
     environment:
       - NODE_ID=0x0004
       - NODE_ROLE=Router
+      - SIM_LAT=-3.0036
+      - SIM_LON=-59.9425
       - SIM_DISABLE_SLEEP=1
       - SIM_LORA_NEIGHBORS=node3,node5
       - MESH_ROUTES=0x0005:0x0005
@@ -41,6 +45,8 @@ services:
     environment:
       - NODE_ID=0x0003
       - NODE_ROLE=Router
+      - SIM_LAT=-3.0056
+      - SIM_LON=-59.9445
       - SIM_DISABLE_SLEEP=1
       - SIM_LORA_NEIGHBORS=node2,node4
       - MESH_ROUTES=0x0005:0x0004
@@ -56,6 +62,8 @@ services:
     environment:
       - NODE_ID=0x0002
       - NODE_ROLE=Router
+      - SIM_LAT=-3.0076
+      - SIM_LON=-59.9465
       - SIM_DISABLE_SLEEP=1
       - SIM_LORA_NEIGHBORS=node1,node3
       - MESH_ROUTES=0x0005:0x0003
@@ -71,7 +79,9 @@ services:
     environment:
       - NODE_ID=0x0001
       - NODE_ROLE=Leaf
-      - BACKEND=qemu
+      - SIM_LAT=-3.0096
+      - SIM_LON=-59.9485
+      - BACKEND=native
       - SIM_DISABLE_SLEEP=1
       - SIM_LORA_NEIGHBORS=node2
       - MESH_ROUTES=0x0005:0x0002

@@ -23,6 +23,8 @@ impl DetectionEngine {
         
         let (class, confidence) = if sum.abs() > 0.05 {
             ("chainsaw".to_string(), 0.92)
+        } else if sum.abs() > 0.03 {
+            ("frog:Boana geographica".to_string(), 0.85)
         } else if sum.abs() > 0.01 {
             ("birds".to_string(), 0.88)
         } else if sum.abs() > 0.005 {

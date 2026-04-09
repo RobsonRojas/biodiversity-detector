@@ -1,28 +1,15 @@
-FROM ubuntu:24.04 AS builder
-
-RUN apt-get update && apt-get install -y \
-    curl cmake git build-essential \
-    libcurl4-openssl-dev nlohmann-json3-dev pkg-config
-
-WORKDIR /app
-COPY . .
-
-# Build for simulation (native)
-RUN rm -rf build && mkdir build && cd build && \
-    cmake .. && \
-    make -j$(nproc)
-
 FROM ubuntu:24.04
 WORKDIR /app
 
+# Install only minimal runtime dependencies if possible
+# Note: Using host-built binary which depends on libcurl
 RUN apt-get update && apt-get install -y \
-    libcurl4 libglib2.0-0 libpixman-1-0 \
-    && curl -L https://github.com/espressif/qemu/releases/download/esp-develop-20220919/qemu-esp-develop-20220919-x86_64-linux-gnu.tar.bz2 | tar -xj -C /opt \
-    && ln -s /opt/qemu/bin/qemu-system-xtensa /usr/bin/qemu-system-xtensa \
+    libcurl4 curl python3 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app/build/guardian_node /app/guardian_node
-# Copy mock audio
+# Copy pre-built host binaries
+COPY build/guardian_node /app/guardian_node
+COPY scripts /app/scripts
 COPY mocks/chainsaw_mock.wav /app/assets/mocks/chainsaw_mock.wav
 
 # Default env for all nodes

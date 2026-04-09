@@ -38,9 +38,13 @@ NodeConfig ConfigParser::parse_from_env() {
         while (std::getline(ss, route_str, ',')) {
             size_t colon = route_str.find(':');
             if (colon != std::string::npos) {
-                uint16_t dest = static_cast<uint16_t>(std::stoul(route_str.substr(0, colon), nullptr, 0));
-                uint16_t next = static_cast<uint16_t>(std::stoul(route_str.substr(colon + 1), nullptr, 0));
-                config.route_manager.add_route(dest, next);
+                try {
+                    uint16_t dest = static_cast<uint16_t>(std::stoul(route_str.substr(0, colon), nullptr, 0));
+                    uint16_t next = static_cast<uint16_t>(std::stoul(route_str.substr(colon + 1), nullptr, 0));
+                    config.route_manager.add_route(dest, next);
+                } catch (const std::exception& e) {
+                    std::cerr << "[SYSTEM] Error parsing route '" << route_str << "': " << e.what() << std::endl;
+                }
             }
         }
     }

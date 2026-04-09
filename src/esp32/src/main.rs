@@ -5,6 +5,7 @@ pub mod mesh_protocol;
 pub mod detection_engine;
 
 use esp_idf_hal::peripherals::Peripherals;
+use esp_idf_hal::uart::*;
 use esp_idf_svc::log::EspLogger;
 use crate::audio_i2s::AudioI2S;
 use crate::circular_buffer::CircularBuffer;
@@ -29,17 +30,68 @@ fn main() -> anyhow::Result<()> {
     let mut audio = AudioI2S::new(peripherals)?;
     let buffer = Arc::new(Mutex::new(CircularBuffer::new(32000)));
 
+    // Shared trigger state for simulator control
+    let trigger_id = Arc::new(Mutex::new(0u8)); // 0: None, 1: Chainsaw, 2: Frog
+
+    // Thread 0: UART Command Listener (Simulator Interface)
+    let trigger_uart = trigger_id.clone();
+    let uart0 = peripherals.uart0;
+    let config = UartConfig::default().baudrate(esp_idf_hal::units::Hertz(115200));
+    let mut uart = UartDriver::new(uart0, peripherals.pins.gpio1, peripherals.pins.gpio3, None::<esp_idf_hal::gpio::AnyIOPin>, &config)?;
+
+    thread::spawn(move || {
+        let mut buf = [0u8; 32];
+        loop {
+            if let Ok(n) = uart.read(&mut buf, esp_idf_hal::delay::BLOCK) {
+                let cmd = String::from_utf8_lossy(&buf[..n]);
+                if cmd.contains("CMD:TRIG:CHAINSAW") {
+                    let mut t = trigger_uart.lock().unwrap();
+                    *t = 1;
+                    log::info!("[UART] SIMULATOR TRIGGER: CHAINSAW");
+                } else if cmd.contains("CMD:TRIG:FROG") {
+                    let mut t = trigger_uart.lock().unwrap();
+                    *t = 2;
+                    log::info!("[UART] SIMULATOR TRIGGER: FROG");
+                }
+            }
+        }
+    });
+
     // Thread 1: Audio Capture (Core 0)
     let buffer_capture = buffer.clone();
+    let trigger_audio = trigger_id.clone();
     thread::spawn(move || {
         let mut local_buf = [0i32; 1024];
         loop {
+            let mut triggered = 0u8;
+            {
+                let mut t = trigger_audio.lock().unwrap();
+                triggered = *t;
+                // Keep trigger active for ~1s to ensure detection cycle catches it
+                // Logic: the runner will send the command, we flip the bit, and eventually reset
+            }
+
             if let Ok(n) = audio.read(&mut local_buf) {
+                if triggered == 1 {
+                    // Inject "chainsaw" samples (sum target > 0.05)
+                    local_buf.fill(150_000_000); 
+                } else if triggered == 2 {
+                    // Inject "frog" samples (sum target > 0.03)
+                    local_buf.fill(90_000_000);
+                }
+
                 if n > 0 {
                     let mut b = buffer_capture.lock().unwrap();
                     b.push(&local_buf[..n]);
                 }
             }
+            
+            // Auto-reset trigger after injecting some frames
+            if triggered != 0 {
+                let mut t = trigger_audio.lock().unwrap();
+                *t = 0;
+            }
+
             thread::sleep(Duration::from_millis(10));
         }
     });
