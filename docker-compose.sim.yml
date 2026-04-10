@@ -17,8 +17,7 @@ services:
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
     networks:
-      mesh_net:
-        ipv4_address: 172.20.0.6
+      - mesh_net
 
   node4_router:
     build:
@@ -34,8 +33,7 @@ services:
       - SIM_LORA_NEIGHBORS=node3,node5
       - MESH_ROUTES=0x0005:0x0005
     networks:
-      mesh_net:
-        ipv4_address: 172.20.0.5
+      - mesh_net
 
   node3_router:
     build:
@@ -51,8 +49,7 @@ services:
       - SIM_LORA_NEIGHBORS=node2,node4
       - MESH_ROUTES=0x0005:0x0004
     networks:
-      mesh_net:
-        ipv4_address: 172.20.0.4
+      - mesh_net
 
   node2_router:
     build:
@@ -68,8 +65,7 @@ services:
       - SIM_LORA_NEIGHBORS=node1,node3
       - MESH_ROUTES=0x0005:0x0003
     networks:
-      mesh_net:
-        ipv4_address: 172.20.0.3
+      - mesh_net
 
   node1_leaf:
     build:
@@ -85,15 +81,10 @@ services:
       - SIM_DISABLE_SLEEP=1
       - SIM_LORA_NEIGHBORS=node2
       - MESH_ROUTES=0x0005:0x0002
-      - SIM_DETECTION_TRIGGER=/tmp/chain_trigger
-    command: python3 scripts/qemu_runner.py
+      - SIM_DETECTION_TRIGGER=/tmp/0x0001_chainsaw_trigger
     networks:
-      mesh_net:
-        ipv4_address: 172.20.0.2
+      - mesh_net
 
 networks:
   mesh_net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
