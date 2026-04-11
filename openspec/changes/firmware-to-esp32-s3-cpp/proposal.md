@@ -7,13 +7,14 @@ Additionally, the project requires clear architectural documentation and code ex
 ## What Changes
 
 1.  **Architecture Migration**: Implement a C++ version of the ESP32-S3 firmware using the ESP-IDF framework.
-2.  **Documentation First**: Create comprehensive documentation integrated into the codebase (via Markdown and Doxygen/Header comments) explaining the firmware architecture, power management cycles, and AI inference pipeline.
-3.  **Code Examples**: Provide modular examples for key components: I2S audio capture, DSP filtering, TFLite Micro inference, and LoRa mesh communication.
+2.  **Biodiversity Monitoring Support**: Expand the firmware capability to detect and report sounds from animals, insects, and amphibians, supporting ecological research.
+3.  **Documentation First**: Create comprehensive documentation integrated into the codebase (via Markdown and Doxygen/Header comments) explaining the firmware architecture, power management cycles, and AI inference pipeline.
+4.  **Code Examples**: Provide modular examples for key components: I2S audio capture, DSP filtering, TFLite Micro inference, and LoRa mesh communication.
 
 ## Capabilities
 
 ### New Capabilities
-- `esp32-s3-cpp-firmware`: Implementation of the chainsaw detection firmware in C++, including optimized audio processing and low-power management.
+- `esp32-s3-cpp-firmware`: Implementation of the chainsaw and biodiversity sound detection firmware in C++, including optimized audio processing and low-power management.
 - `firmware-architecture-docs`: Complete architectural documentation including timing diagrams, state machines, and integration guides.
 
 ### Modified Capabilities

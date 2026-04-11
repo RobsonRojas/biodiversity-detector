@@ -7,6 +7,7 @@ The current Rust implementation is being migrated to C++ to leverage the more ma
 **Goals:**
 - Implement a C++ firmware using ESP-IDF v5.x.
 - 3-stage power cascade: Quiet (ULP monitoring), Transition (DSP spectral analysis), Active (CNN Inference).
+- Multi-class sound detection: Support for chainsaws and biodiversity (animals, insects, amphibians).
 - Comprehensive architectural documentation with code examples.
 - Integration with existing LoRa mesh network.
 
@@ -26,8 +27,8 @@ Documentation will be split into three tiers:
 - **Implementation Guide**: A specific `DEVELOPMENT.md` with walkthroughs and code snippets for common tasks (e.g., adding a new alert type).
 
 ### 3. Audio Pipeline
-- **I2S DMA**: Audio will be captured via I2S using DMA into dual buffers to prevent dropouts during DSP/AI processing.
-- **DSP Filter**: A 256-point FFT will be used to check for energy in the 100Hz-2kHz range before waking the AI task.
+- **I2S DMA**: Audio will be captured via I2S using DMA into dual buffers. Sample rate will be configurable up to 48kHz to capture high-frequency insect sounds.
+- **DSP Filter**: A multi-band energy analysis (FFT) will be used to detect both low-frequency chainsaw signatures (100Hz-2kHz) and higher-frequency biological signatures (up to 20kHz).
 
 ### 4. Code Examples Module
 A set of standalone ESP-IDF components will be created in `examples/` that demonstrate minimal usage of I2S, LoRa, and AI Inference, serving as both documentation and test harnesses.
