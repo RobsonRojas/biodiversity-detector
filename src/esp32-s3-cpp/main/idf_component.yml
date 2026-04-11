@@ -1,0 +1,3 @@
+dependencies:
+  espressif/esp-dsp: "^1.4.0"
+  espressif/esp_nn: "^1.0.0"
