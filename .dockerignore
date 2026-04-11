@@ -1,9 +1,8 @@
 # build/
+build/
+managed_components/
+sdkconfig
+dependencies.lock
 .agent/
 .git/
-CMakeFiles/
-CMakeCache.txt
-*.ko
-*.o
-*.mod
-*.rlib
+...

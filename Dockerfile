@@ -3,7 +3,7 @@ FROM ubuntu:24.04 AS builder-rpi
 
 # Configuração de repositórios multi-arch
 RUN dpkg --add-architecture arm64 && \
-    sed -i 's/^deb /deb [arch=amd64] /g' /etc/apt/sources.list.d/ubuntu.sources && \
+    sed -i 's/^Types: deb/Types: deb\nArchitectures: amd64/' /etc/apt/sources.list.d/ubuntu.sources && \
     echo "Types: deb\nURIs: http://ports.ubuntu.com/ubuntu-ports/\nSuites: noble noble-updates noble-security\nComponents: main universe restricted multiverse\nArchitectures: arm64" > /etc/apt/sources.list.d/arm64.sources && \
     apt-get update && apt-get install -y \
     curl cmake git build-essential \
@@ -29,26 +29,13 @@ RUN rm -rf build && mkdir build && cd build && \
           .. && \
     make -j$(nproc)
 
-# --- Stage 2: Build ESP32 Rust ---
-FROM ubuntu:24.04 AS builder-esp32
-
-RUN apt-get update && apt-get install -y \
-    curl git python3 python3-pip python3-venv \
-    libusb-1.0-0-dev libssl-dev pkg-config
-
-# Instalação do Rust e ferramenta espup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-ENV PATH="/root/.cargo/bin:${PATH}"
-
-# Setup toolchain ESP32 (simulado para build em contêiner)
-RUN cargo install ldproxy espup cargo-espflash && \
-    espup install --targets esp32s3
-
-WORKDIR /app
-COPY src/esp32/ src/esp32/
-WORKDIR /app/src/esp32
-# Nota: Build real requer ambiente espup source
-RUN /bin/bash -c "source $HOME/export-esp.sh && cargo build --release"
+# --- Stage 2: Build ESP32 C++ (ESP-IDF) ---
+FROM espressif/idf:v5.3 AS builder-esp-cpp
+WORKDIR /build-area
+COPY src/esp32-s3-cpp/ .
+# Garante que resíduos locais não interfiram no build do container
+RUN rm -rf build managed_components sdkconfig dependencies.lock
+RUN . /opt/esp/idf/export.sh && idf.py build
 
 # --- Stage 3: Build Web Frontend (Vite) ---
 FROM node:20 AS builder-web-frontend
@@ -70,7 +57,7 @@ RUN apt-get update && apt-get install -y \
 # Copia os binários do RPi
 COPY --from=builder-rpi /app/build/guardian_node /app/guardian_node
 # Copia o firmware do ESP32 como artefato
-COPY --from=builder-esp32 /app/src/esp32/target/xtensa-esp32s3-espidf/release/esp32 /app/dist/esp32.bin
+COPY --from=builder-esp-cpp /build-area/build/esp32-s3-cpp-firmware.bin /app/dist/esp32.bin
 
 # Copia o Web Manager (Static Frontend - Vite dist)
 COPY --from=builder-web-frontend /app/frontend/dist /app/web/frontend

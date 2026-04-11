@@ -1,20 +1,33 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <string>
+#include <math.h>
+#include <map>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "esp_system.h"
+#include "esp_err.h"
+#include "esp_timer.h" // For uptime
 
 #include "audio_capture.hpp"
+#include "audio_buffer.hpp"
 #include "dsp_analyzer.hpp"
 #include "inference_engine.hpp"
+#include "esp_lora_driver.hpp"
+#include "battery_monitor.hpp"
+#include "telemetry_manager.hpp"
 
 static const char *TAG = "GUARDIAN_MAIN";
 
 // Configuration
-#define SAMPLE_RATE     44100
-#define FFT_SIZE        1024
-#define RMS_THRESHOLD   0.01f  // Trigger for DSP phase
+#define SAMPLE_RATE         44100
+#define FFT_SIZE            1024
+#define RMS_THRESHOLD       0.01f  
+#define AI_WINDOW_SIZE      (SAMPLE_RATE * 2) 
+#define TELEMETRY_INTERVAL  (60 * 1000)      
+#define BATTERY_ADC_CHANNEL ADC_CHANNEL_0    // GPIO 1 on S3
 
 extern "C" void app_main(void)
 {
@@ -22,68 +35,92 @@ extern "C" void app_main(void)
     
     // Components
     AudioCapture audio;
+    AudioBuffer ai_buffer(AI_WINDOW_SIZE);
     DspAnalyzer dsp;
     InferenceEngine ai;
+    EspLoRaDriver lora;
+    BatteryMonitor battery;
+    TelemetryManager telemetry_mgr;
 
     // Initialization
     if (audio.init(SAMPLE_RATE) != ESP_OK || 
         dsp.init(FFT_SIZE) != ESP_OK || 
-        ai.init() != ESP_OK) {
+        ai.init() != ESP_OK ||
+        lora.init() != ESP_OK ||
+        battery.init(BATTERY_ADC_CHANNEL) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize components. System Halted.");
         return;
     }
 
-    // Audio buffers
     int32_t* raw_samples = (int32_t*)malloc(FFT_SIZE * sizeof(int32_t));
+    float* float_samples = (float*)malloc(FFT_SIZE * sizeof(float));
     size_t bytes_read = 0;
+    TickType_t last_telemetry_tick = xTaskGetTickCount();
+    
+    // Structure to track session stats
+    std::map<std::string, int> session_detections;
 
     ESP_LOGI(TAG, "System Ready. Monitoring Environment...");
 
     while (1) {
-        // --- STAGE 1: RMS Monitoring (Simulated Power Conservation) ---
+        // --- STAGE 1: RMS Monitoring ---
         audio.read(raw_samples, FFT_SIZE * sizeof(int32_t), &bytes_read, portMAX_DELAY);
         
-        // Simple RMS calculation
         float rms = 0;
         for (int i = 0; i < FFT_SIZE; i++) {
-            float s = (float)raw_samples[i] / 2147483648.0f;
-            rms += s * s;
+            float_samples[i] = (float)raw_samples[i] / 2147483648.0f;
+            rms += float_samples[i] * float_samples[i];
         }
         rms = sqrtf(rms / FFT_SIZE);
 
-        if (rms > RMS_THRESHOLD) {
-            ESP_LOGD(TAG, "Threshold triggered (RMS: %.4f). Entering DSP Stage...", rms);
+        ai_buffer.push(float_samples, FFT_SIZE);
 
-            // --- STAGE 2: DSP Pattern Verification (FFT) ---
+        if (rms > RMS_THRESHOLD) {
+            // --- STAGE 2: DSP Pattern Verification ---
             float mechanical_energy = 0;
             float biological_energy = 0;
             dsp.analyze(raw_samples, mechanical_energy, biological_energy);
 
-            ESP_LOGD(TAG, "Energy - Mech: %.4f, Bio: %.4f", mechanical_energy, biological_energy);
-
             bool should_run_ai = (mechanical_energy > 0.5f) || (biological_energy > 0.2f);
 
-            if (should_run_ai) {
-                // --- STAGE 3: AI Inference (TFLite Micro) ---
+            if (should_run_ai && ai_buffer.is_ready()) {
+                // --- STAGE 3: AI Inference ---
                 std::string label;
                 float confidence;
                 
-                // Note: In real setup, we might need a longer buffer for the CNN
-                // For now we use the normalized data from Stage 2 logic
-                float* normalized_buffer = (float*)malloc(FFT_SIZE * sizeof(float));
-                for(int i=0; i<FFT_SIZE; i++) normalized_buffer[i] = (float)raw_samples[i] / 2147483648.0f;
-                
-                ai.classify(normalized_buffer, FFT_SIZE, label, confidence);
-                free(normalized_buffer);
+                ai.classify(ai_buffer.get_window(), ai_buffer.get_capacity(), label, confidence);
 
                 if (confidence > 0.8f) {
                     ESP_LOGI(TAG, ">>> DETECTED: %s (Conf: %.2f)", label.c_str(), confidence);
-                    // TODO: Trigger LoRa Alert / Telemetry
+                    
+                    // Update session stats
+                    session_detections[label]++;
+                    
+                    // Alert Message
+                    std::string payload = "ALERT:" + label + ":" + std::to_string(confidence);
+                    lora.send((uint8_t*)payload.c_str(), payload.length());
                 }
             }
         }
 
-        // Heartbeat / Power Management
-        vTaskDelay(pdMS_TO_TICKS(10)); // Minimal yield
+        // --- Periodic Telemetry ---
+        if ((xTaskGetTickCount() - last_telemetry_tick) > pdMS_TO_TICKS(TELEMETRY_INTERVAL)) {
+            ESP_LOGI(TAG, "Aggregating real telemetry data...");
+            
+            TelemetryData data;
+            data.battery_level = battery.get_battery_level();
+            data.last_rssi = lora.get_last_rssi();
+            data.uptime_s = esp_timer_get_time() / 1000000; // microseconds to seconds
+            data.detection_counts = session_detections;
+
+            std::string payload = telemetry_mgr.format_payload(data);
+            ESP_LOGI(TAG, "Sending telemetry: %s", payload.c_str());
+            
+            lora.send((uint8_t*)payload.c_str(), payload.length());
+            
+            last_telemetry_tick = xTaskGetTickCount();
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(10)); 
     }
 }

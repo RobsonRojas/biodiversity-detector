@@ -13,10 +13,10 @@
 
 ## 3. AI Inference and LoRa
 
-- [ ] 3.1 Integrate Edge Impulse C++ bundle and TFLite Micro runtime.
-- [/] 3.2 Implement multi-class inference wrapper (Chainsaw, Animal, Insect, Amphibian).
-- [ ] 3.3 Port LoRa mesh communication logic to C++ and integrate with the alert/telemetry system.
-- [ ] 3.4 Implement periodic telemetry reporting for biodiversity events.
+- [x] 3.1 Integrate Edge Impulse C++ bundle and TFLite Micro runtime.
+- [x] 3.2 Implement multi-class inference wrapper (Chainsaw, Animal, Insect, Amphibian).
+- [x] 3.3 Port LoRa mesh communication logic to C++ and integrate with the alert/telemetry system.
+- [x] 3.4 Implement periodic telemetry reporting for biodiversity events.
 
 ## 4. Documentation and Architecture
 
