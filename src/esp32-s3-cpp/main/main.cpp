@@ -4,6 +4,7 @@
 #include <string>
 #include <math.h>
 #include <map>
+#include <memory>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -52,7 +53,7 @@ extern "C" void app_main(void)
         return;
     }
 
-    float* float_samples = (float*)malloc(FFT_SIZE * sizeof(float));
+    auto float_samples = std::make_unique<float[]>(FFT_SIZE);
     TickType_t last_telemetry_tick = xTaskGetTickCount();
     
     // Structure to track session stats
@@ -87,7 +88,7 @@ extern "C" void app_main(void)
         }
         rms = sqrtf(rms / FFT_SIZE);
 
-        ai_buffer.push(float_samples, FFT_SIZE);
+        ai_buffer.push(float_samples.get(), FFT_SIZE);
 
         if (rms > RMS_THRESHOLD) {
             // --- STAGE 2: DSP Pattern Verification ---

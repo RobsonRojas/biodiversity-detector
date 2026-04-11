@@ -6,13 +6,9 @@
 
 static const char *TAG = "DSP_ANALYZER";
 
-DspAnalyzer::DspAnalyzer() : n_fft(0), window(NULL), fft_input(NULL), fft_output(NULL) {}
+DspAnalyzer::DspAnalyzer() : n_fft(0) {}
 
-DspAnalyzer::~DspAnalyzer() {
-    if (window) free(window);
-    if (fft_input) free(fft_input);
-    if (fft_output) free(fft_output);
-}
+// Destructor is default in header, unique_ptr handles cleanup
 
 esp_err_t DspAnalyzer::init(int fft_size) {
     n_fft = fft_size;
@@ -22,11 +18,11 @@ esp_err_t DspAnalyzer::init(int fft_size) {
         return ret;
     }
 
-    window = (float*)malloc(n_fft * sizeof(float));
-    fft_input = (float*)malloc(n_fft * 2 * sizeof(float)); // Complex input
-    fft_output = (float*)malloc(n_fft * 2 * sizeof(float)); // Complex output
+    window = std::make_unique<float[]>(n_fft);
+    fft_input = std::make_unique<float[]>(n_fft * 2); // Complex input
+    fft_output = std::make_unique<float[]>(n_fft * 2); // Complex output
 
-    dsps_wind_hann_f32(window, n_fft);
+    dsps_wind_hann_f32(window.get(), n_fft);
 
     ESP_LOGI(TAG, "DSP Analyzer initialized with FFT size %d", n_fft);
     return ESP_OK;
@@ -40,8 +36,8 @@ void DspAnalyzer::analyze(const int32_t* input, float& mechanical_energy, float&
     }
 
     // 2. Perform FFT
-    dsps_fft2r_fc32(fft_input, n_fft);
-    dsps_bit_rev_fc32(fft_input, n_fft);
+    dsps_fft2r_fc32(fft_input.get(), n_fft);
+    dsps_bit_rev_fc32(fft_input.get(), n_fft);
 
     // 3. Calculate Power (using first half of complex spectrum)
     mechanical_energy = 0;

@@ -13,8 +13,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    volumes:
-      - .:/app
     environment:
       - CMAKE_BUILD_PARALLEL_LEVEL=4
 

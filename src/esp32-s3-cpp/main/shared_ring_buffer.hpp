@@ -5,6 +5,7 @@
 #include <atomic>
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "memory_helpers.hpp"
 
 #define RING_BUFFER_MAX_SEGMENTS 4
 #define RING_BUFFER_SEGMENT_SIZE 1024 // Bytes
@@ -34,7 +35,7 @@ public:
     bool has_space();
 
 private:
-    uint8_t* buffer;
+    memory::DmaUniquePtr<uint8_t> buffer;
     size_t total_size;
     
     std::atomic<int> write_index;

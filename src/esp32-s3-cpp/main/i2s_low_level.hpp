@@ -2,6 +2,7 @@
 
 #include "esp_err.h"
 #include "driver/i2s_std.h"
+#include <memory>
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -24,7 +25,16 @@ public:
     esp_err_t stop();
 
 private:
-    i2s_chan_handle_t rx_handle;
+    struct I2SDeleter {
+        void operator()(i2s_chan_handle_t h) const {
+            if (h) {
+                i2s_channel_disable(h);
+                i2s_del_channel(h);
+            }
+        }
+    };
+
+    std::unique_ptr<std::remove_pointer_t<i2s_chan_handle_t>, I2SDeleter> rx_handle;
     i2s_ll_config_t cfg;
     SharedRingBuffer* rb;
     bool initialized;

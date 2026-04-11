@@ -49,10 +49,19 @@ RUN npm run build
 FROM ubuntu:24.04
 WORKDIR /app
 
-# Dependências de runtime para o app C++
-RUN apt-get update && apt-get install -y \
-    libcurl4 qemu-user-static \
+# Configuração de repositórios multi-arch para dependências de runtime AARCH64
+RUN dpkg --add-architecture arm64 && \
+    sed -i 's/^Types: deb/Types: deb\nArchitectures: amd64/' /etc/apt/sources.list.d/ubuntu.sources && \
+    echo "Types: deb\nURIs: http://ports.ubuntu.com/ubuntu-ports/\nSuites: noble noble-updates noble-security\nComponents: main universe restricted multiverse\nArchitectures: arm64" > /etc/apt/sources.list.d/arm64.sources && \
+    apt-get update && apt-get install -y \
+    qemu-user-static \
+    libcurl4:arm64 \
+    libstdc++6:arm64 \
+    libgcc-s1:arm64 \
     && rm -rf /var/lib/apt/lists/*
+
+# Configura o QEMU para encontrar as bibliotecas arm64
+ENV QEMU_LD_PREFIX=/
 
 # Copia os binários do RPi
 COPY --from=builder-rpi /app/build/guardian_node /app/guardian_node
@@ -63,5 +72,5 @@ COPY --from=builder-esp-cpp /build-area/build/esp32-s3-cpp-firmware.bin /app/dis
 COPY --from=builder-web-frontend /app/frontend/dist /app/web/frontend
 
 EXPOSE 80
-CMD ["./guardian_node"]
+CMD ["/usr/bin/qemu-aarch64-static", "-L", "/", "/app/guardian_node"]
 

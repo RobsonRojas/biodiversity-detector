@@ -3,6 +3,7 @@
 #include "dsps_fft2r.h"
 #include "esp_err.h"
 #include <vector>
+#include <memory>
 
 /**
  * @brief Class to analyze audio data using FFT.
@@ -12,7 +13,7 @@
 class DspAnalyzer {
 public:
     DspAnalyzer();
-    ~DspAnalyzer();
+    ~DspAnalyzer() = default;
 
     /**
      * @brief Initialize the FFT buffers
@@ -31,7 +32,7 @@ public:
 
 private:
     int n_fft;
-    float* window;
-    float* fft_input;
-    float* fft_output;
+    std::unique_ptr<float[]> window;
+    std::unique_ptr<float[]> fft_input;
+    std::unique_ptr<float[]> fft_output;
 };

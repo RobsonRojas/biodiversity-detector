@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "esp_heap_caps.h"
+#include <memory>
+#include "memory_helpers.hpp"
 
 /**
  * @brief Sliding window buffer for audio samples, optimized for AI inference.
@@ -28,7 +30,7 @@ public:
      * @brief Get a pointer to the current full window
      * @return float* Pointer to raw samples (ordered from oldest to newest)
      */
-    const float* get_window() const { return samples_; }
+    const float* get_window() const { return samples_.get(); }
 
     /**
      * @brief Check if the buffer is full (has reached capacity)
@@ -38,7 +40,7 @@ public:
     size_t get_capacity() const { return capacity_; }
 
 private:
-    float* samples_;
+    memory::DmaUniquePtr<float> samples_;
     size_t capacity_;
     size_t count_;
 };

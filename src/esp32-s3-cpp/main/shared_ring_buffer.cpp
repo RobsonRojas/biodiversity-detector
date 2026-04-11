@@ -5,18 +5,18 @@
 
 SharedRingBuffer::SharedRingBuffer() : write_index(0), read_index(0), count(0) {
     total_size = RING_BUFFER_MAX_SEGMENTS * RING_BUFFER_SEGMENT_SIZE;
-    // Allocate DRAM for DMA
-    buffer = (uint8_t*)heap_caps_malloc(total_size, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-    memset(buffer, 0, total_size);
+    // Allocate DRAM for DMA using RAII
+    buffer = memory::make_dma_unique<uint8_t>(total_size);
+    if (buffer) {
+        memset(buffer.get(), 0, total_size);
+    }
 }
 
-SharedRingBuffer::~SharedRingBuffer() {
-    if (buffer) heap_caps_free(buffer);
-}
+SharedRingBuffer::~SharedRingBuffer() = default;
 
 void* SharedRingBuffer::get_free_segment_ptr() {
     if (!has_space()) return NULL;
-    return buffer + (write_index.load() * RING_BUFFER_SEGMENT_SIZE);
+    return buffer.get() + (write_index.load() * RING_BUFFER_SEGMENT_SIZE);
 }
 
 void SharedRingBuffer::commit_segment() {
@@ -30,7 +30,7 @@ void SharedRingBuffer::commit_segment() {
 
 const void* SharedRingBuffer::get_ready_segment_ptr() {
     if (!has_data()) return NULL;
-    return buffer + (read_index.load() * RING_BUFFER_SEGMENT_SIZE);
+    return buffer.get() + (read_index.load() * RING_BUFFER_SEGMENT_SIZE);
 }
 
 const SegmentMetadata* SharedRingBuffer::get_ready_segment_metadata() {

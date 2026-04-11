@@ -5,14 +5,9 @@
 
 static const char* TAG = "I2S_LL_STABLE";
 
-I2SLowLevel::I2SLowLevel() : rx_handle(NULL), rb(NULL), initialized(false) {}
+I2SLowLevel::I2SLowLevel() : rx_handle(nullptr), rb(nullptr), initialized(false) {}
 
-I2SLowLevel::~I2SLowLevel() {
-    if (initialized) {
-        i2s_channel_disable(rx_handle);
-        i2s_del_channel(rx_handle);
-    }
-}
+I2SLowLevel::~I2SLowLevel() = default;
 
 esp_err_t I2SLowLevel::init(const i2s_ll_config_t& config, SharedRingBuffer* ring_buf) {
     cfg = config;
@@ -22,7 +17,11 @@ esp_err_t I2SLowLevel::init(const i2s_ll_config_t& config, SharedRingBuffer* rin
 
     // 1. Channel Configuration
     i2s_chan_config_t chan_cfg = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
-    ESP_RETURN_ON_ERROR(i2s_new_channel(&chan_cfg, NULL, &rx_handle), TAG, "Failed to create I2S channel");
+    i2s_chan_handle_t raw_rx_handle = nullptr;
+    ESP_RETURN_ON_ERROR(i2s_new_channel(&chan_cfg, NULL, &raw_rx_handle), TAG, "Failed to create I2S channel");
+    
+    // Transfer ownership to unique_ptr
+    rx_handle.reset(raw_rx_handle);
 
     // 2. Standard Mode Configuration
     i2s_std_config_t std_cfg = {
@@ -44,7 +43,7 @@ esp_err_t I2SLowLevel::init(const i2s_ll_config_t& config, SharedRingBuffer* rin
     // Ensure 32-bit slot for high fidelity
     std_cfg.slot_cfg.slot_mask = I2S_STD_SLOT_LEFT; 
     
-    ESP_RETURN_ON_ERROR(i2s_channel_init_std_mode(rx_handle, &std_cfg), TAG, "Failed to init I2S std mode");
+    ESP_RETURN_ON_ERROR(i2s_channel_init_std_mode(rx_handle.get(), &std_cfg), TAG, "Failed to init I2S std mode");
 
     // 3. Register Event Callback
     i2s_event_callbacks_t cbs = {
@@ -53,7 +52,7 @@ esp_err_t I2SLowLevel::init(const i2s_ll_config_t& config, SharedRingBuffer* rin
         .on_sent = NULL,
         .on_send_q_ovf = NULL,
     };
-    ESP_RETURN_ON_ERROR(i2s_channel_register_event_callback(rx_handle, &cbs, this), TAG, "Failed to register callback");
+    ESP_RETURN_ON_ERROR(i2s_channel_register_event_callback(rx_handle.get(), &cbs, this), TAG, "Failed to register callback");
 
     initialized = true;
     ESP_LOGI(TAG, "I2S Stable Driver initialized (32-bit, %lu Hz)", cfg.sample_rate);
@@ -62,12 +61,12 @@ esp_err_t I2SLowLevel::init(const i2s_ll_config_t& config, SharedRingBuffer* rin
 
 esp_err_t I2SLowLevel::start() {
     if (!initialized) return ESP_ERR_INVALID_STATE;
-    return i2s_channel_enable(rx_handle);
+    return i2s_channel_enable(rx_handle.get());
 }
 
 esp_err_t I2SLowLevel::stop() {
     if (!initialized) return ESP_ERR_INVALID_STATE;
-    return i2s_channel_disable(rx_handle);
+    return i2s_channel_disable(rx_handle.get());
 }
 
 bool IRAM_ATTR I2SLowLevel::i2s_rx_callback(i2s_chan_handle_t handle, i2s_event_data_t *event, void *user_ctx) {
