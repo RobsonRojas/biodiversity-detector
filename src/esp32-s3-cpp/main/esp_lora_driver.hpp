@@ -30,6 +30,11 @@ public:
     esp_err_t send(const uint8_t* data, size_t len);
 
     /**
+     * @brief Poll for incoming packets or IRQ status
+     */
+    void poll();
+
+    /**
      * @brief Get the RSSI of the last received/sent packet
      * @return int RSSI in dBm
      */

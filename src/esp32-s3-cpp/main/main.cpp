@@ -52,9 +52,7 @@ extern "C" void app_main(void)
         return;
     }
 
-    int32_t* raw_samples = (int32_t*)malloc(FFT_SIZE * sizeof(int32_t));
     float* float_samples = (float*)malloc(FFT_SIZE * sizeof(float));
-    size_t bytes_read = 0;
     TickType_t last_telemetry_tick = xTaskGetTickCount();
     
     // Structure to track session stats
@@ -63,8 +61,24 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "System Ready. Monitoring Environment...");
 
     while (1) {
-        // --- STAGE 1: RMS Monitoring ---
-        audio.read(raw_samples, FFT_SIZE * sizeof(int32_t), &bytes_read, portMAX_DELAY);
+        // --- STAGE 1: RMS Monitoring (Zero-Copy) ---
+        const int32_t* raw_samples = (const int32_t*)audio.get_next_buffer();
+        const SegmentMetadata* meta = audio.get_next_metadata();
+        
+        if (raw_samples == NULL || meta == NULL) {
+            vTaskDelay(pdMS_TO_TICKS(1));
+            continue;
+        }
+
+        // Latency Profiling (Task 3.3)
+        uint64_t now = esp_timer_get_time();
+        uint32_t propagation_latency_us = (uint32_t)(now - meta->timestamp_us);
+        
+        static uint32_t sample_count = 0;
+        if (sample_count++ % 100 == 0) {
+            ESP_LOGI(TAG, "Latency: %lu us | Occupancy: %d/%d", 
+                     propagation_latency_us, audio.get_occupancy(), RING_BUFFER_MAX_SEGMENTS);
+        }
         
         float rms = 0;
         for (int i = 0; i < FFT_SIZE; i++) {
@@ -121,6 +135,7 @@ extern "C" void app_main(void)
             last_telemetry_tick = xTaskGetTickCount();
         }
 
+        audio.release_buffer();
         vTaskDelay(pdMS_TO_TICKS(10)); 
     }
 }

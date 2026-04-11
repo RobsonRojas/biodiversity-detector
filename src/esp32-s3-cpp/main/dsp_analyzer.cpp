@@ -1,6 +1,7 @@
 #include "dsp_analyzer.hpp"
 #include "esp_log.h"
 #include "dsps_view.h"
+#include "dsps_wind.h"
 #include <math.h>
 
 static const char *TAG = "DSP_ANALYZER";

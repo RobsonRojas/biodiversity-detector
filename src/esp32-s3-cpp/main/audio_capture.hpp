@@ -1,10 +1,7 @@
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
-#include "freertos/FreeRTOS.h"
-#include "driver/i2s_std.h"
-#include "esp_err.h"
+#include "i2s_low_level.hpp"
+#include "shared_ring_buffer.hpp"
 
 /**
  * @brief Class to handle I2S audio capture from a digital microphone.
@@ -22,16 +19,13 @@ public:
      */
     esp_err_t init(uint32_t sample_rate);
 
-    /**
-     * @brief Read a block of audio data
-     * @param buffer Pointer to the destination buffer
-     * @param size Size in bytes
-     * @param bytes_read Number of bytes actually read
-     * @param timeout_ms Timeout for reading
-     * @return esp_err_t ESP_OK on success
-     */
-    esp_err_t read(void* buffer, size_t size, size_t* bytes_read, TickType_t timeout_ms);
+    // Zero-copy accessors
+    const void* get_next_buffer();
+    const SegmentMetadata* get_next_metadata();
+    void release_buffer();
+    int get_occupancy();
 
 private:
-    i2s_chan_handle_t rx_handle;
+    I2SLowLevel ll_driver;
+    SharedRingBuffer ring_buffer;
 };
