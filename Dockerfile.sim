@@ -1,18 +1,29 @@
+FROM ubuntu:24.04 AS builder
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    build-essential cmake git libcurl4-openssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy build files and source
+COPY CMakeLists.txt ./
+COPY include/ include/
+COPY src/ src/
+
+RUN mkdir -p build && cd build && cmake .. && make -j$(nproc)
+
 FROM ubuntu:24.04
 WORKDIR /app
 
-# Install only minimal runtime dependencies if possible
-# Note: Using host-built binary which depends on libcurl
 RUN apt-get update && apt-get install -y \
     libcurl4 curl python3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy pre-built host binaries
-COPY build/guardian_node /app/guardian_node
-COPY scripts /app/scripts
-COPY mocks/chainsaw_mock.wav /app/assets/mocks/chainsaw_mock.wav
+COPY --from=builder /app/build/guardian_node /app/guardian_node
+COPY scripts/ /app/scripts/
+COPY mocks/ /app/assets/mocks/
+COPY assets/ /app/assets/
 
-# Default env for all nodes
 ENV USE_SIM_LORA=1
 ENV SIM_LORA_PORT=5000
 

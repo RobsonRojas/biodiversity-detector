@@ -13,4 +13,4 @@ set(srcs
 
 idf_component_register(SRCS ${srcs}
                     INCLUDE_DIRS "."
-                    REQUIRES esp_driver_spi esp-dsp esp_adc esp_driver_gpio esp_timer hal esp_hw_support esp_rom esp_driver_i2s)
+                    REQUIRES esp_driver_spi esp-dsp esp_adc esp_driver_gpio esp_timer hal esp_hw_support esp_rom esp_driver_i2s espressif__esp-tflite-micro)
