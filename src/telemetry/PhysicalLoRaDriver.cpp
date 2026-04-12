@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2026 Robson Rojas
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "../utils/compat.hpp"
 #include "PhysicalLoRaDriver.hpp"
 #include <fcntl.h>
@@ -34,14 +51,16 @@ guardian::expected<void, std::error_code> PhysicalLoRaDriver::initialize() {
     reset();
     wait_busy();
 
-    std::cout << "[LoRa] SX1262 Reset and Ready.\n";
+    std::cout << "[LoRa] SX1262 Reset and Ready.
+";
     return {};
 }
 
 guardian::expected<void, std::error_code> PhysicalLoRaDriver::send(guardian::span<const uint8_t> data) {
     if (spi_fd_ < 0) return guardian::unexpected(std::make_error_code(std::errc::not_connected));
     
-    std::cout << "[LoRa] Sending physical packet (" << data.size() << " bytes) via SPI...\n";
+    std::cout << "[LoRa] Sending physical packet (" << data.size() << " bytes) via SPI...
+";
     wait_busy();
     
     // Command 0x0E: WriteBuffer
@@ -60,7 +79,8 @@ guardian::expected<size_t, std::error_code> PhysicalLoRaDriver::receive(guardian
 }
 
 void PhysicalLoRaDriver::reset() {
-     std::cout << "[LoRa] Toggling RST Pin " << rst_pin_ << "\n";
+     std::cout << "[LoRa] Toggling RST Pin " << rst_pin_ << "
+";
      // gpio_write(rst_pin_, 0); usleep(100); gpio_write(rst_pin_, 1);
 }
 

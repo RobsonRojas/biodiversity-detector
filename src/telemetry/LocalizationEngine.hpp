@@ -22,6 +22,12 @@
 #include <cmath>
 #include <stdint.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+namespace guardian::telemetry {
+
 /**
  * @struct NodeCoords
  * @brief Geographic or relative spatial coordinates
@@ -44,10 +50,12 @@ public:
     /**
      * @brief Update the node's position estimate based on neighbor beacons
      * @param neighbor_id ID of the neighbor node
-     * @param coords Coordinates reported by the neighbor
+     * @param lat Latitude of the neighbor
+     * @param lon Longitude of the neighbor
+     * @param accuracy Accuracy of the neighbor's coordinate
      * @param rssi RSSI of the neighbor's beacon
      */
-    void update_neighbor(uint8_t neighbor_id, const NodeCoords& coords, int rssi);
+    void update_neighbor(uint16_t neighbor_id, double lat, double lon, double accuracy, int rssi);
     
     /**
      * @brief Run the multi-lateration calculation
@@ -71,12 +79,14 @@ private:
         NodeCoords coords;
         double distance_m;
     };
-    std::map<uint8_t, Anchor> anchors_;
+    std::map<uint16_t, Anchor> anchors_;
     
     // Path Loss Model Parameters (tuned for jungle)
     const double N_FACTOR = 3.5; // Path loss exponent (3-4 for dense foliage)
     const double REFERENCE_RSSI = -45.0; // RSSI at 1 meter
     
     double rssi_to_distance(int rssi);
-    double calculate_error(double x, double y, const std::vector<Anchor>& test_anchors);
+    double calculate_error(double lat, double lon, const std::vector<Anchor>& test_anchors);
 };
+
+} // namespace guardian::telemetry
