@@ -51,8 +51,7 @@ public:
                     messages.push_back(current_msg);
                     current_msg.clear();
                 } else {
-                    current_msg += line + "
-";
+                    current_msg += line + "\n";
                 }
             }
         }

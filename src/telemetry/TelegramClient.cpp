@@ -30,8 +30,7 @@ TelegramClient::TelegramClient(TelegramConfig config) : config_(std::move(config
 
 guardian::expected<void, TelemetryError> TelegramClient::send_message(const std::string& message) {
     // Mock send_message to avoid libcurl cross-compilation issues in Docker
-    std::cout << "[TelegramClient] Mock Sending Message to Telegram:
-" << message << std::endl;
+    std::cout << "[TelegramClient] Mock Sending Message to Telegram: " << message << std::endl;
     return {};
 }
 

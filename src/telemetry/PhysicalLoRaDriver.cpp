@@ -51,16 +51,14 @@ guardian::expected<void, std::error_code> PhysicalLoRaDriver::initialize() {
     reset();
     wait_busy();
 
-    std::cout << "[LoRa] SX1262 Reset and Ready.
-";
+    std::cout << "[LoRa] SX1262 Reset and Ready." << std::endl;
     return {};
 }
 
 guardian::expected<void, std::error_code> PhysicalLoRaDriver::send(guardian::span<const uint8_t> data) {
     if (spi_fd_ < 0) return guardian::unexpected(std::make_error_code(std::errc::not_connected));
     
-    std::cout << "[LoRa] Sending physical packet (" << data.size() << " bytes) via SPI...
-";
+    std::cout << "[LoRa] Sending physical packet (" << data.size() << " bytes) via SPI..." << std::endl;
     wait_busy();
     
     // Command 0x0E: WriteBuffer
@@ -79,8 +77,7 @@ guardian::expected<size_t, std::error_code> PhysicalLoRaDriver::receive(guardian
 }
 
 void PhysicalLoRaDriver::reset() {
-     std::cout << "[LoRa] Toggling RST Pin " << rst_pin_ << "
-";
+     std::cout << "[LoRa] Toggling RST Pin " << rst_pin_ << std::endl;
      // gpio_write(rst_pin_, 0); usleep(100); gpio_write(rst_pin_, 1);
 }
 
