@@ -18,3 +18,9 @@
 ## 5. Validation
 - [/] 5.1 Execute the full mesh simulation and confirm that a simulated alert from a leaf node reaches the Supabase backend.
 - [/] 5.2 Validate that the UART-to-UDP bridge is stable and does not leak sockets or memory during long simulation runs.
+- [ ] 5.3 Verify that the `qemu_runner.py` correctly handles the `LORA_RX` protocol for coordinate injection.
+
+## 6. Geolocation Propagation Verification
+- [ ] 6.1 Trigger a geolocation beacon from a simulated Native Gateway (Node 5).
+- [ ] 6.2 Monitor Node 1 (QEMU) serial output for position convergence logs.
+- [ ] 6.3 Verify that Node 1's subsequent telemetry contains the resolved coordinates and reduced accuracy error.

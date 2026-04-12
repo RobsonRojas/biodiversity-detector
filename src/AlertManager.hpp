@@ -55,6 +55,7 @@ public:
                       << " target=0x" << pkt->header.target_id 
                       << " bat=" << std::dec << pkt->header.battery_mv << "mV"
                       << " rssi=" << (int)pkt->header.last_rssi << "dBm"
+                      << " pos=(" << pkt->header.lat << ", " << pkt->header.lon << ")"
                       << " hops_rem=" << (int)pkt->header.hop_limit << std::endl;
 
             if (pkt->header.target_id == config_.node_id) {
@@ -102,6 +103,8 @@ public:
         pkt.header.last_rssi = rssi;
         pkt.header.hop_limit = 10;
         pkt.header.payload_len = hb.size();
+        pkt.header.lat = config_.lat;
+        pkt.header.lon = config_.lon;
         pkt.header.signature = 0xABCD;
         pkt.payload.assign(hb.begin(), hb.end());
 

@@ -9,6 +9,8 @@ The previous attempt to use Renode for ESP32-S3 simulation was blocked by the la
 - **Bootloader & Partitioning**: Configure QEMU to correctly handle the ESP32-S3 bootloader, partition table, and app binary loading.
 - **UART Bridge**: Implement a socket-based UART bridge for QEMU to connect with the MeshRelay and other simulated nodes.
 - **Audio Mocking**: Adapt the audio injection strategy to work with QEMU's peripheral emulation or memory injection capabilities.
+- **Geolocation Propagation**: Validate the mesh's coordinate convergence logic using emulated neighbor coordinates injected via the UART bridge.
+- **Gateway Simulation**: Implement a dedicated "Gateway Mode" in the simulation bridge to broadcast authoritative geographic reference points (lat/lon) to the mesh, verifying that leaf nodes accurately converge on their own coordinates through multi-lateration.
 
 ## Capabilities
 
@@ -16,7 +18,7 @@ The previous attempt to use Renode for ESP32-S3 simulation was blocked by the la
 - `esp32s3-qemu-simulation`: Defines the requirements for running ESP32-S3 firmware in a QEMU-based environment, including UART connectivity and memory-mapped peripheral simulation.
 
 ### Modified Capabilities
-- `lorawan-mesh-routing`: Update requirements to include validation via QEMU-simulated leaf nodes.
+- `lorawan-mesh-routing`: Update requirements to include validation via QEMU-simulated leaf nodes and geolocation propagation.
 
 ## Impact
 

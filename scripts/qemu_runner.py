@@ -4,6 +4,9 @@ import socket
 import time
 import signal
 import sys
+import math
+import json
+import base64
 
 # Configuration
 QEMU_BIN = "qemu-system-xtensa"
@@ -14,6 +17,15 @@ UDP_LORA_PORT = 5000
 UDP_IP = "127.0.0.1"
 TRIG_CHAINSAW = "/tmp/chainsaw_trigger"
 TRIG_FROG = "/tmp/frog_trigger"
+
+# Propagation Constants
+REFERENCE_RSSI = -45.0
+N_FACTOR = 3.5
+
+# Simulation Environment
+SIM_LAT = float(os.getenv("SIM_LAT", "-3.0096"))
+SIM_LON = float(os.getenv("SIM_LON", "-59.9485"))
+NODE_ID_INT = int(os.getenv("NODE_ID", "0x0001"), 16)
 
 class QEMURunner:
     def __init__(self, node_id="0x0001"):
@@ -106,9 +118,23 @@ class QEMURunner:
     def loop(self):
         """Task 3.3: Bridge UART to UDP MeshRelay & Handle Triggers."""
         print("[QEMURunner] Simulation bridge active. Press Ctrl+C to stop.")
+        
+        last_beacon_time = 0
+        BEACON_INTERVAL = 30 # Seconds
+        
         try:
             while True:
-                # Check for file-based triggers
+                # 1. Periodic Gateway Beacon Propagation (Request 10)
+                current_time = time.time()
+                if current_time - last_beacon_time > BEACON_INTERVAL:
+                    # In Gateway mode, we broadcast our coordinates as an authoritative beacon
+                    # Format: BEACON:ID:LAT:LON:ACC
+                    beacon = f"BEACON:0x{NODE_ID_INT:04X}:{SIM_LAT}:{SIM_LON}:1.0\n"
+                    print(f"[QEMURunner] Periodic Gateway Beacon: {beacon.strip()}")
+                    self.uart_sock.sendall(f"LORA_RX:{beacon}:-20\n".encode()) 
+                    last_beacon_time = current_time
+
+                # 2. Check for file-based triggers
                 if os.path.exists(TRIG_CHAINSAW):
                     print("[QEMURunner] Triggering CHAINSAW via UART...")
                     self.uart_sock.sendall(b"CMD:TRIG:CHAINSAW\n")
@@ -120,13 +146,50 @@ class QEMURunner:
                     os.remove(TRIG_FROG)
 
                 try:
+                    data, addr = self.udp_sock.recvfrom(1024)
+                    if data:
+                        payload = data.decode(errors='ignore')
+                        print(f"[QEMURunner] Mesh RX: {payload} from {addr}")
+                        
+                        # 3. Realistic RSSI Calculation based on distance
+                        try:
+                            # Try to extract sender coordinates if available in payload
+                            # Expecting Format: BEACON:ID:LAT:LON:ACC
+                            if payload.startswith("BEACON:"):
+                                parts = payload.split(":")
+                                sender_lat = float(parts[2])
+                                sender_lon = float(parts[3])
+                                
+                                # Distance in meters (rough approx for small distances)
+                                d = math.sqrt(((SIM_LAT - sender_lat) * 111000)**2 + 
+                                             ((SIM_LON - sender_lon) * 111000 * math.cos(math.radians(SIM_LAT)))**2)
+                                
+                                # Log-distance path loss model
+                                d = max(1.0, d) # Avoid log(0)
+                                sim_rssi = REFERENCE_RSSI - 10 * N_FACTOR * math.log10(d)
+                                print(f"[QEMURunner] Calculated RSSI for distance {d:.1f}m: {sim_rssi:.1f}dBm")
+                            else:
+                                sim_rssi = -75 # Default for non-beacon mesh traffic
+                        except Exception as e:
+                            print(f"[QEMURunner] RSSI calc failed: {e}")
+                            sim_rssi = -80
+                        
+                        # Wrap in virtual protocol for guest
+                        msg = f"LORA_RX:{payload}:{int(sim_rssi)}\n"
+                        self.uart_sock.sendall(msg.encode())
+
                     data = self.uart_sock.recv(1024)
                     if data:
                         # Forward UART output to stdout for visibility
                         sys.stdout.write(data.decode(errors='ignore'))
                         sys.stdout.flush()
-                        # Forward to MeshRelay (UDP)
-                        self.udp_sock.sendto(data, (UDP_IP, UDP_LORA_PORT))
+                        
+                        # Check if guest is sending LORA_TX
+                        guest_str = data.decode(errors='ignore')
+                        if guest_str.startswith("LORA_TX:"):
+                            payload_to_mesh = guest_str[8:].strip()
+                            # Forward to MeshRelay (UDP)
+                            self.udp_sock.sendto(payload_to_mesh.encode(), (UDP_IP, UDP_LORA_PORT))
                 except BlockingIOError:
                     pass
                 time.sleep(0.1)

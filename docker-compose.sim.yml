@@ -77,13 +77,14 @@ services:
       - NODE_ROLE=Leaf
       - SIM_LAT=-3.0096
       - SIM_LON=-59.9485
-      - BACKEND=native
+      - BACKEND=qemu
       - SIM_DISABLE_SLEEP=1
       - SIM_LORA_NEIGHBORS=node2
       - MESH_ROUTES=0x0005:0x0002
       - SIM_DETECTION_TRIGGER=/tmp/0x0001_chainsaw_trigger
     networks:
       - mesh_net
+    command: ["python3", "scripts/qemu_runner.py"]
 
 networks:
   mesh_net:

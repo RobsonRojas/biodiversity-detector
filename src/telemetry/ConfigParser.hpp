@@ -34,11 +34,13 @@ enum class NodeRole {
 struct NodeConfig {
     uint16_t node_id;
     NodeRole role;
+    double lat;
+    double lon;
     RouteManager route_manager;
     std::shared_ptr<LoRaDriver> driver;
     
-    NodeConfig() : node_id(0), role(NodeRole::Leaf), route_manager(0) {}
-    NodeConfig(uint16_t id) : node_id(id), role(NodeRole::Leaf), route_manager(id) {}
+    NodeConfig() : node_id(0), role(NodeRole::Leaf), lat(0.0), lon(0.0), route_manager(0) {}
+    NodeConfig(uint16_t id) : node_id(id), role(NodeRole::Leaf), lat(0.0), lon(0.0), route_manager(id) {}
 };
 
 class ConfigParser {

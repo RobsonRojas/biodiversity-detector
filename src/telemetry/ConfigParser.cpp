@@ -41,10 +41,21 @@ NodeConfig ConfigParser::parse_from_env() {
     } else {
         config.role = NodeRole::Leaf;
     }
+
+    const char* lat_env = getenv("GPS_LAT");
+    const char* lon_env = getenv("GPS_LON");
+    if (lat_env && lon_env) {
+        config.lat = std::stod(lat_env);
+        config.lon = std::stod(lon_env);
+    } else {
+        config.lat = 0.0;
+        config.lon = 0.0;
+    }
     
     std::cout << "[SYSTEM] Config: NodeID=0x" << std::hex << config.node_id 
               << ", Role=" << (config.role == NodeRole::Gateway ? "Gateway" : 
                              (config.role == NodeRole::Router ? "Router" : "Leaf")) 
+              << ", Pos=(" << std::fixed << config.lat << ", " << config.lon << ")"
               << std::dec << std::endl;
 
     // 2. Mesh Routing Table

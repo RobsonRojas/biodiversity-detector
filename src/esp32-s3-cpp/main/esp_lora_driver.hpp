@@ -15,11 +15,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
 #include "esp_err.h"
 #include "driver/spi_master.h"
 #include "driver/gpio.h"
+#include <cstdint>
 #include <vector>
 #include <string>
 
@@ -57,9 +56,15 @@ public:
      */
     int get_last_rssi();
 
+    /**
+     * @brief Set the localization engine to update on neighbor beacons
+     */
+    void set_localization_engine(class LocalizationEngine* engine) { localization_engine_ = engine; }
+
 private:
     spi_device_handle_t spi_handle_;
     int last_rssi_;
+    class LocalizationEngine* localization_engine_;
     
     // Low-level SPI operations
     void write_reg(uint8_t addr, uint8_t val);

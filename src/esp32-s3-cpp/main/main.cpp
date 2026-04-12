@@ -72,6 +72,9 @@ extern "C" void app_main(void)
         return;
     }
 
+    // Link LoRa to Localization for simulation propagation
+    lora.set_localization_engine(&localization);
+
     auto float_samples = std::make_unique<float[]>(FFT_SIZE);
     TickType_t last_telemetry_tick = xTaskGetTickCount();
     

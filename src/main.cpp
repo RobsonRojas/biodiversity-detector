@@ -28,13 +28,14 @@ std::atomic<bool> running{true};
 
 void heartbeat_loop(AlertManager& alert_manager) {
     while (running) {
-        std::this_thread::sleep_for(std::chrono::seconds(30));
-        // Simulate fluctuating battery (4200mV -> 3600mV) and RSSI (-60dBm -> -120dBm)
+        // Send heartbeat immediately then sleep
         uint16_t mock_bat = 3800 + (rand() % 400); 
         int8_t mock_rssi = -70 - (rand() % 40);
         
         std::cout << "[SYSTEM] Sending periodic Mesh Heartbeat (Bat: " << mock_bat << "mV, RSSI: " << (int)mock_rssi << "dBm)..." << std::endl;
         alert_manager.send_heartbeat(mock_bat, mock_rssi);
+        
+        std::this_thread::sleep_for(std::chrono::seconds(30));
     }
 }
 

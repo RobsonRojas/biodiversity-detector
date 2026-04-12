@@ -17,7 +17,11 @@
 
 #include "esp_lora_driver.hpp"
 #include "esp_log.h"
+#include "driver/uart.h"
 #include <string.h>
+#include <string>
+#include <vector>
+#include <sstream>
 
 static const char *TAG = "LORA_DRIVER";
 
@@ -85,11 +89,57 @@ esp_err_t EspLoRaDriver::send(const uint8_t* data, size_t len) {
 }
 
 void EspLoRaDriver::poll() {
+    // Stage 1: Check for Virtual LoRa packets via UART 0 (Console bridge)
+    uint8_t data[256];
+    int length = 0;
+    ESP_ERROR_CHECK(uart_get_buffered_data_len(UART_NUM_0, (size_t*)&length));
+    if (length > 0) {
+        length = uart_read_bytes(UART_NUM_0, data, length, 10 / portTICK_PERIOD_MS);
+        if (length > 0) {
+            std::string line((char*)data, length);
+            if (line.find("LORA_RX:") == 0) {
+                // Protocol: LORA_RX:PAYLOAD:RSSI\n
+                size_t first_colon = line.find(':', 8);
+                if (first_colon != std::string::npos) {
+                    std::string payload = line.substr(8, first_colon - 8);
+                    std::string rssi_str = line.substr(first_colon + 1);
+                    last_rssi_ = std::stoi(rssi_str);
+                    
+                    ESP_LOGI(TAG, "Virtual LoRa RX: %s (RSSI: %d)", payload.c_str(), last_rssi_);
+                    
+                    if (localization_engine_ && payload.find("BEACON:") == 0) {
+                        // BEACON:ID:LAT:LON:ACC
+                        std::vector<std::string> parts;
+                        std::stringstream pss(payload);
+                        std::string part;
+                        while (std::getline(pss, part, ':')) {
+                            parts.push_back(part);
+                        }
+
+                        if (parts.size() >= 5) {
+                            uint8_t id = (uint8_t)strtol(parts[1].c_str(), NULL, 10);
+                            NodeCoords coords;
+                            coords.lat = strtod(parts[2].c_str(), NULL);
+                            coords.lon = strtod(parts[3].c_str(), NULL);
+                            coords.accuracy = strtod(parts[4].c_str(), NULL);
+                            localization_engine_->update_neighbor(id, coords, last_rssi_);
+                            
+                            // Trigger position recalculation
+                            if (localization_engine_->calculate_position()) {
+                                ESP_LOGI(TAG, "Localization Updated! New coords: %f, %f", 
+                                         localization_engine_->get_current_coords().lat,
+                                         localization_engine_->get_current_coords().lon);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Stage 2: Hardware Polling (Original Logic)
     // 1. Check DIO1 for received packets
-    // 2. If packet received:
-    //    - Read packet data
-    //    - Read PacketStatus (RSSI, SNR) from SX126x/SX127x
-    //    - update last_rssi_
+    // ...
 }
 
 int EspLoRaDriver::get_last_rssi() {

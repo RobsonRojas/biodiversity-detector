@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include "dsps_fft2r.h"
 #include "esp_err.h"
 #include <vector>
 #include <memory>
@@ -49,7 +48,7 @@ public:
 
 private:
     int n_fft;
-    std::unique_ptr<float[]> window;
-    std::unique_ptr<float[]> fft_input;
-    std::unique_ptr<float[]> fft_output;
+    float* window;
+    float* fft_input;
+    float* fft_output;
 };

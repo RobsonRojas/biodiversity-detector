@@ -1,8 +1,8 @@
 FROM ubuntu:24.04 AS builder
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    build-essential cmake git libcurl4-openssl-dev \
+RUN apt-get update || true && apt-get install -y \
+    build-essential cmake git libcurl4-openssl-dev ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy build files and source
@@ -15,12 +15,16 @@ RUN mkdir -p build && cd build && cmake .. && make -j$(nproc)
 FROM ubuntu:24.04
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    libcurl4 curl python3 \
+RUN apt-get update || true && apt-get install -y \
+    libcurl4 curl python3 python3-pip ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Espressif QEMU
+RUN curl -L https://github.com/espressif/qemu/releases/download/esp-develop-20231024/qemu-xtensa-softmmu.tar.bz2 | tar -xj -C /usr/local/bin/
 
 COPY --from=builder /app/build/guardian_node /app/guardian_node
 COPY scripts/ /app/scripts/
+COPY dist/ /app/dist/
 COPY mocks/ /app/assets/mocks/
 COPY assets/ /app/assets/
 
