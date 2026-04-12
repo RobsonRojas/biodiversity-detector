@@ -42,8 +42,8 @@ NodeConfig ConfigParser::parse_from_env() {
         config.role = NodeRole::Leaf;
     }
 
-    const char* lat_env = getenv("GPS_LAT");
-    const char* lon_env = getenv("GPS_LON");
+    const char* lat_env = getenv("SIM_LAT");
+    const char* lon_env = getenv("SIM_LON");
     if (lat_env && lon_env) {
         config.lat = std::stod(lat_env);
         config.lon = std::stod(lon_env);

@@ -64,7 +64,8 @@ public:
                     std::cout << "[Gateway] Final destination reached. Reporting Telemetry.\n";
                     
                     std::string sound_class = "chainsaw"; 
-                    if (msg.find("birds") != std::string::npos) sound_class = "birds";
+                    if (msg.find("Boana") != std::string::npos) sound_class = "frog:Boana geographica";
+                    else if (msg.find("birds") != std::string::npos) sound_class = "birds";
                     else if (msg.find("rain") != std::string::npos) sound_class = "rain";
 
                     std::string map_link = "\n📍 Location: https://www.google.com/maps/search/?api=1&query=" + 
@@ -194,6 +195,8 @@ private:
         pkt.header.prev_hop_id = config_.node_id;
         pkt.header.battery_mv = battery_mv;
         pkt.header.last_rssi = rssi;
+        pkt.header.lat = config_.lat;
+        pkt.header.lon = config_.lon;
         pkt.header.hop_limit = 10;
         pkt.header.payload_len = message.size();
         pkt.header.signature = 0xABCD;
