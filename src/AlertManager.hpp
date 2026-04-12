@@ -66,7 +66,9 @@ public:
                     if (msg.find("birds") != std::string::npos) sound_class = "birds";
                     else if (msg.find("rain") != std::string::npos) sound_class = "rain";
 
-                    send_to_telegram(msg + " (Bat: " + std::to_string(pkt->header.battery_mv) + "mV)");
+                    std::string map_link = "\n📍 Location: https://www.google.com/maps/search/?api=1&query=" + 
+                                          std::to_string(pkt->header.lat) + "," + std::to_string(pkt->header.lon);
+                    send_to_telegram(msg + " (Bat: " + std::to_string(pkt->header.battery_mv) + "mV)" + map_link);
                     send_to_supabase(std::to_string(pkt->header.sender_id), 0.95, pkt->header.battery_mv, pkt->header.last_rssi, sound_class); 
                 }
             } else if (config_.role == telemetry::NodeRole::Router || config_.role == telemetry::NodeRole::Gateway) {

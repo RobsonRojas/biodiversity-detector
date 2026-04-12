@@ -12,7 +12,10 @@ std::string TelemetryManager::format_payload(const TelemetryData& data) {
     ss << "TELEMETRY"
        << ":BAT:" << data.battery_level
        << ":RSSI:" << data.last_rssi
-       << ":UPTIME:" << data.uptime_s;
+       << ":UPTIME:" << data.uptime_s
+       << ":LAT:" << data.lat
+       << ":LON:" << data.lon
+       << ":ACC:" << data.accuracy;
     
     // Append biodiversity stats
     for (const auto& [label, count] : data.detection_counts) {

@@ -2,6 +2,7 @@
 
 #include <string>
 #include <map>
+#include <stdint.h>
 
 /**
  * @brief Structure to hold all telemetry data points.
@@ -10,6 +11,9 @@ struct TelemetryData {
     int battery_level;      // 0-100%
     int last_rssi;          // dBm
     uint64_t uptime_s;      // seconds
+    double lat;             // degrees
+    double lon;             // degrees
+    double accuracy;        // meters
     std::map<std::string, int> detection_counts;
 };
 

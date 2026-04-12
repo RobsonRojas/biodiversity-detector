@@ -5,12 +5,13 @@
 #include <string>
 #include <memory>
 
-// Forward-declare TFLite Micro types to keep the header SDK-free.
-namespace tflite {
-    class MicroInterpreter;
-    class MicroMutableOpResolver;
-    class Model;
-}  // namespace tflite
+#include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#include "tensorflow/lite/schema/schema_generated.h"
+
+#include <cstddef>
+
+// Psuedo-forward-declare TfLiteTensor to avoid including the whole common header if not needed
 struct TfLiteTensor;
 
 /**
@@ -52,8 +53,8 @@ private:
     std::unique_ptr<uint8_t, void(*)(void*)> tensor_arena_;
 
     // TFLite Micro objects (opaque pointers; impl owns lifetime).
-    const tflite::Model* model_;
-    std::unique_ptr<tflite::MicroMutableOpResolver> resolver_;
-    std::unique_ptr<tflite::MicroInterpreter>       interpreter_;
+    const tflite::Model*model_;
+    std::unique_ptr<tflite::MicroOpResolver> resolver_;
+    std::unique_ptr<tflite::MicroInterpreter> interpreter_;
     TfLiteTensor* input_tensor_;
 };

@@ -27,16 +27,69 @@ serve(async (req: Request) => {
       });
     if (nodeError) throw nodeError;
 
-    // 2. If it's a detection, insert record
+    // 2. If it's a detection, run Weighted Centroid Localization (WCL)
     if (confidence !== undefined) {
-      const { error: detectionError } = await supabase
+      // a. Insert the raw detection
+      const { data: currentDetection, error: detectionError } = await supabase
         .from('detections')
         .insert([{ 
           node_id, 
           confidence, 
-          timestamp: new Date().toISOString() 
-        }]);
+          pushed_at: new Date().toISOString(),
+          last_rssi: rssi_dbm,
+          sound_class: payload.sound_class || 'chainsaw'
+        }])
+        .select()
+        .single();
+      
       if (detectionError) throw detectionError;
+
+      // b. Correlation: Find other detections within 10s of now
+      const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+      const { data: recentDetections, error: correlateError } = await supabase
+        .from('detections')
+        .select(`
+          node_id,
+          confidence,
+          nodes:node_id (latitude, longitude)
+        `)
+        .eq('sound_class', payload.sound_class || 'chainsaw')
+        .gt('pushed_at', tenSecondsAgo);
+      
+      if (!correlateError && recentDetections && recentDetections.length >= 1) {
+        // c. Multi-node Weighted Centroid Calculation
+        let sumWeights = 0;
+        let weightedLat = 0;
+        let weightedLon = 0;
+        const observerNodes = [];
+
+        for (const det of recentDetections) {
+           if (det.nodes && det.nodes.latitude && det.nodes.longitude) {
+              const weight = det.confidence;
+              sumWeights += weight;
+              weightedLat += det.nodes.latitude * weight;
+              weightedLon += det.nodes.longitude * weight;
+              observerNodes.push(det.node_id);
+           }
+        }
+
+        if (sumWeights > 0) {
+           const eventLat = weightedLat / sumWeights;
+           const eventLon = weightedLon / sumWeights;
+
+           // d. Upsert the localized acoustic event
+           await supabase
+             .from('acoustic_events')
+             .upsert({
+                sound_class: payload.sound_class || 'chainsaw',
+                latitude: eventLat,
+                longitude: eventLon,
+                avg_confidence: sumWeights / recentDetections.length,
+                observer_nodes: observerNodes,
+                last_detected_at: new Date().toISOString()
+             }, { onConflict: 'sound_class,latitude,longitude' }); // Simplified conflict logic
+        }
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), {

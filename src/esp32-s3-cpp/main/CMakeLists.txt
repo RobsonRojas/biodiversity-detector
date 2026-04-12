@@ -9,6 +9,7 @@ set(srcs
     "telemetry_manager.cpp"
     "i2s_low_level.cpp"
     "shared_ring_buffer.cpp"
+    "localization_module.cpp"
 )
 
 idf_component_register(SRCS ${srcs}

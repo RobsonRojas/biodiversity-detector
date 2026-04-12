@@ -145,7 +145,7 @@ esp_err_t InferenceEngine::init() {
         model_,
         *resolver,
         tensor_arena_.get(),
-        kTensorArenaSize);
+        static_cast<size_t>(kTensorArenaSize));
 
     TfLiteStatus alloc_status = interp->AllocateTensors();
     if (alloc_status != kTfLiteOk) {

@@ -1,87 +1,101 @@
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
+import { useState } from 'react';
+
 // Custom icons using Material Icons style / SVG
-const getIcon = (role: string) => L.divIcon({
+const getIcon = (role: string, isEvent = false) => L.divIcon({
     html: `<div style="
-        background-color: ${role === 'Gateway' ? '#2196f3' : role === 'Router' ? '#ff9800' : '#00e676'};
-        width: 30px;
-        height: 30px;
+        background-color: ${isEvent ? '#f44336' : role === 'Gateway' ? '#2196f3' : role === 'Router' ? '#ff9800' : '#00e676'};
+        width: ${isEvent ? '40px' : '30px'};
+        height: ${isEvent ? '40px' : '30px'};
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
         border: 2px solid white;
-        box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    "><span style="font-size: 16px; font-weight: bold;">${role[0]}</span></div>`,
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        animation: ${isEvent ? 'pulse 2s infinite' : 'none'};
+    "><span style="font-size: 16px; font-weight: bold;">${isEvent ? '⚠️' : role[0]}</span></div>`,
     className: 'custom-node-icon',
     iconSize: [30, 30],
     iconAnchor: [15, 15]
 });
 
-const nodes = [
-  { id: '1', name: 'Leaf 1', lat: -23.5505, lng: -46.6333, role: 'Leaf' },
-  { id: '2', name: 'Router 2', lat: -23.5510, lng: -46.6340, role: 'Router' },
-  { id: '3', name: 'Router 3', lat: -23.5515, lng: -46.6345, role: 'Router' },
-  { id: '4', name: 'Router 4', lat: -23.5520, lng: -46.6350, role: 'Router' },
-  { id: '5', name: 'Gateway 5', lat: -23.5525, lng: -46.6355, role: 'Gateway' },
-];
-
 const Map = () => {
-  useEffect(() => {
-    // Listen to detections to update visualization if needed
-    const channel = supabase
-      .channel('map-telemetry')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'detections' }, () => {
-          // Placeholder for real-time updates
-      })
-      .subscribe();
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
 
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  const getLinkColor = (rssi: number) => {
-    if (rssi < -110) return "#f44336"; // Red
-    if (rssi < -90) return "#ffeb3b";  // Yellow
-    return "#00e676";                 // Green
+  const fetchData = async () => {
+    const { data: nodeData } = await supabase.from('nodes').select('*');
+    if (nodeData) setNodes(nodeData.map(n => ({ ...n, lat: n.latitude, lng: n.longitude, role: n.id === '5' ? 'Gateway' : 'Leaf' })));
+    
+    const { data: eventData } = await supabase.from('acoustic_events').select('*');
+    if (eventData) setEvents(eventData);
   };
 
-  return (
-    <MapContainer center={[-23.5515, -46.6345]} zoom={17} style={{ height: '100%', width: '100%' }}>
-      <TileLayer
-        url="https://{s}.tile.osm.org/{z}/{x}/{y}.png"
-        attribution='&copy; OSM'
-      />
-      
-      {/* Visualizing Mesh Links */}
-      {nodes.slice(0, -1).map((node, i) => {
-        const nextNode = nodes[i+1];
-        return (
-          <Polyline 
-            key={`${node.id}-${nextNode.id}`}
-            positions={[ [node.lat, node.lng], [nextNode.lat, nextNode.lng] ]}
-            color={getLinkColor(-80 - (i * 10))} // i=3 will be -110 (Red)
-            weight={4}
-            opacity={0.7}
-            dashArray="10, 10"
-          />
-        );
-      })}
+  useEffect(() => {
+    fetchData();
 
-      {nodes.map(node => (
-        <Marker key={node.id} position={[node.lat, node.lng]} icon={getIcon(node.role)}>
-          <Popup>
-            <strong>{node.name}</strong><br />
-            Role: {node.role}<br />
-            Status: Active
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
+    const nodeChannel = supabase
+      .channel('nodes-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nodes' }, fetchData)
+      .subscribe();
+
+    const eventChannel = supabase
+      .channel('events-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'acoustic_events' }, fetchData)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(nodeChannel);
+      supabase.removeChannel(eventChannel);
+    };
+  }, []);
+
+
+  return (
+    <div style={{ height: '100%', width: '100%' }}>
+      <style>{`
+        @keyframes pulse {
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7); }
+          70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+        }
+      `}</style>
+      <MapContainer center={[-23.5515, -46.6345]} zoom={17} style={{ height: '100%', width: '100%' }}>
+        <TileLayer
+          url="https://{s}.tile.osm.org/{z}/{x}/{y}.png"
+          attribution='&copy; OSM'
+        />
+        
+        {nodes.map(node => (
+          <Marker key={node.id} position={[node.lat, node.lng]} icon={getIcon(node.role)}>
+            <Popup>
+              <strong>Node {node.id}</strong><br />
+              Role: {node.role}<br />
+              Accuracy: {node.location_accuracy?.toFixed(1)}m<br />
+              Last Seen: {new Date(node.last_seen).toLocaleTimeString()}
+            </Popup>
+          </Marker>
+        ))}
+
+        {events.map(event => (
+          <Marker key={event.id} position={[event.latitude, event.longitude]} icon={getIcon('', true)}>
+            <Popup>
+              <strong>⚠️ {event.sound_class.toUpperCase()} DETECTED</strong><br />
+              Confidence: {(event.avg_confidence * 100).toFixed(1)}%<br />
+              Time: {new Date(event.last_detected_at).toLocaleTimeString()}<br />
+              Observers: {event.observer_nodes?.join(', ')}
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </div>
   );
 };
 

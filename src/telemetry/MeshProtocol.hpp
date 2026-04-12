@@ -22,7 +22,9 @@ struct MeshHeader {
     int8_t last_rssi;    // Diagnostic: RSSI of previous hop
     uint8_t hop_limit;
     uint8_t payload_len;
-    uint16_t signature; // simplified signature for demo
+    double lat;          // Localization: Latitude
+    double lon;          // Localization: Longitude
+    uint16_t signature;  // simplified signature for demo
 };
 #pragma pack(pop)
 

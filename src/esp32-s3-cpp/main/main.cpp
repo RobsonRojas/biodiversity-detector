@@ -19,6 +19,7 @@
 #include "esp_lora_driver.hpp"
 #include "battery_monitor.hpp"
 #include "telemetry_manager.hpp"
+#include "localization_module.hpp"
 
 static const char *TAG = "GUARDIAN_MAIN";
 
@@ -42,6 +43,7 @@ extern "C" void app_main(void)
     EspLoRaDriver lora;
     BatteryMonitor battery;
     TelemetryManager telemetry_mgr;
+    LocalizationEngine localization;
 
     // Initialization
     if (audio.init(SAMPLE_RATE) != ESP_OK || 
@@ -67,6 +69,7 @@ extern "C" void app_main(void)
         const SegmentMetadata* meta = audio.get_next_metadata();
         
         if (raw_samples == NULL || meta == NULL) {
+            lora.poll(); // Poll LoRa even if no audio buffer is ready
             vTaskDelay(pdMS_TO_TICKS(1));
             continue;
         }
@@ -112,7 +115,11 @@ extern "C" void app_main(void)
                     session_detections[label]++;
                     
                     // Alert Message
-                    std::string payload = "ALERT:" + label + ":" + std::to_string(confidence);
+                    // Alert Message with Location
+                    NodeCoords current_pos = localization.get_current_coords();
+                    std::string payload = "ALERT:" + label + ":" + std::to_string(confidence) +
+                                         ":LAT:" + std::to_string(current_pos.lat) +
+                                         ":LON:" + std::to_string(current_pos.lon);
                     lora.send((uint8_t*)payload.c_str(), payload.length());
                 }
             }
@@ -125,7 +132,13 @@ extern "C" void app_main(void)
             TelemetryData data;
             data.battery_level = battery.get_battery_level();
             data.last_rssi = lora.get_last_rssi();
-            data.uptime_s = esp_timer_get_time() / 1000000; // microseconds to seconds
+            data.uptime_s = esp_timer_get_time() / 1000000;
+            
+            NodeCoords current_pos = localization.get_current_coords();
+            data.lat = current_pos.lat;
+            data.lon = current_pos.lon;
+            data.accuracy = current_pos.accuracy;
+            
             data.detection_counts = session_detections;
 
             std::string payload = telemetry_mgr.format_payload(data);

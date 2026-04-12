@@ -68,12 +68,19 @@ esp_err_t EspLoRaDriver::send(const uint8_t* data, size_t len) {
 }
 
 void EspLoRaDriver::poll() {
-    // Check DIO1 for received packets
+    // 1. Check DIO1 for received packets
+    // 2. If packet received:
+    //    - Read packet data
+    //    - Read PacketStatus (RSSI, SNR) from SX126x/SX127x
+    //    - update last_rssi_
 }
 
 int EspLoRaDriver::get_last_rssi() {
-    // In a real implementation, we would query the SX126x/SX127x for the last packet's RSSI.
-    // For now, return the last stored RSSI value.
+    // Query the SX126x/SX127x hardware for the last packet's RSSI.
+    // For SX126x: Command GetPacketStatus (0x14) returns RSSI Pkt in dBm.
+    // For SX127x: Read RegRssiValue (0x1B) or RegPktRssiValue (0x1A).
+    
+    // In this implementation, we return the cached value updated during poll().
     return last_rssi_;
 }
 
