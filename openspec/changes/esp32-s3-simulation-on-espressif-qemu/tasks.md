@@ -24,3 +24,12 @@
 - [ ] 6.1 Trigger a geolocation beacon from a simulated Native Gateway (Node 5).
 - [ ] 6.2 Monitor Node 1 (QEMU) serial output for position convergence logs.
 - [ ] 6.3 Verify that Node 1's subsequent telemetry contains the resolved coordinates and reduced accuracy error.
+
+## 7. Visual Simulation Map Output
+- [x] 7.1 Create `scripts/sim_visualizer.py` with log parsing, map rendering, and animation generation.
+- [x] 7.2 Implement stylized dark forest background with contour lines and LoRa coverage circles.
+- [x] 7.3 Implement animated packet flow between nodes (heartbeat, relay, alert differentiation).
+- [x] 7.4 Implement detection alert pulsating markers (chainsaw 🪚, frog 🐸) at originating node.
+- [x] 7.5 Implement HUD dashboard panel (battery, RSSI, detection counts per node).
+- [x] 7.6 Output 1920×1080 MP4 at 30 FPS to `sim_output/musa_simulation.mp4`.
+- [x] 7.7 Run full simulation and generate video; verify output integrity.

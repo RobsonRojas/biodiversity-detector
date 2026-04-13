@@ -9,6 +9,7 @@ The GuardianCore project requires a high-fidelity simulation of the ESP32-S3 nod
 - Enable a 5-node heterogeneous simulation (Native Linux nodes + QEMU nodes).
 - Support binary loading (bootloader, partition table, app) from the `dist/` directory.
 - Expose guest UART via TCP/UDP sockets for MeshRelay integration.
+- Generate animated map video from simulation logs showing node topology, mesh traffic, and detection events.
 
 **Non-Goals:**
 - Full hardware peripheral emulation (e.g., I2S, ADC) beyond what's needed for the UART bridge and boot sequence.
@@ -34,6 +35,17 @@ The GuardianCore project requires a high-fidelity simulation of the ESP32-S3 nod
 ### 3. Unified Image Deployment
 - **Decision**: Utilize a Python-based `qemu_runner.py` to orchestrate booting with separate binary components (bootloader, partitions, app).
 - **Rationale**: ESP-IDF binaries are typically split. Loading them individually via `-drive if=pflash` or `-device loader` is cleaner than manually merging into a 4MB/8MB blob every time.
+
+### 5. Visual Simulation Map Output (`sim_visualizer.py`)
+- **Decision**: Use Matplotlib + FFMpeg to generate a cinematic animated map from post-simulation log files.
+- **Rationale**: Matplotlib is already available in the environment and provides the compositing flexibility needed for a multi-layer map (terrain, nodes, traffic, HUD). FFMpeg handles encoding to MP4. No additional dependencies needed.
+- **Architecture**:
+  - **Log Parser**: Reads `sim_logs/nodeN.log` files and reconstructs a timeline of events (heartbeats, relays, alerts, detections).
+  - **Map Renderer**: Plots nodes on a lat/lon grid with a stylized dark forest background, contour lines, and LoRa range circles.
+  - **Animation Engine**: Steps through the event timeline, animating packet flow between nodes and detection pulses.
+  - **HUD Dashboard**: Side panel showing per-node battery, RSSI, and detection counts, updated per frame.
+  - **Output**: 1920×1080 MP4 at 30 FPS saved to `sim_output/musa_simulation.mp4`.
+- **Alternative**: Using a web-based renderer (Leaflet.js + Puppeteer recording) — rejected for complexity and additional dependencies.
 
 ## Risks / Trade-offs
 

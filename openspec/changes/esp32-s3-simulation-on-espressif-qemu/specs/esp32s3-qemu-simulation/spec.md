@@ -1,3 +1,5 @@
+## ADDED Requirements
+
 ### Requirement: Geolocation-Propagation-Simulation
 The system SHALL simulate the propagation of geographic coordinates across the mesh using RSSI values derived from simulated distances between nodes.
 
@@ -34,3 +36,22 @@ The system SHALL support loading pre-compiled binary artifacts into QEMU without
 #### Scenario: Pre-compiled Image Loading
 - **WHEN** valid firmware images exist in the `dist/` directory
 - **THEN** QEMU loads these images using physical memory mapping or the `-drive` interface as per Espressif QEMU standards
+
+### Requirement: Visual-Simulation-Map-Output
+The system SHALL produce a visual map representation of the simulation, rendering all mesh nodes at their geographic coordinates and animating network events in real time. The output SHALL be saved as a video file (MP4).
+
+#### Scenario: Animated Map Generation from Logs
+- **WHEN** the simulation completes and per-node log files exist in `sim_logs/`
+- **THEN** a Python-based visualizer parses the logs and generates a map animation showing:
+  - Node positions plotted on a geographic coordinate grid
+  - Node roles distinguished by icon shape/color (Leaf, Router, Gateway)
+  - Mesh relay paths animated as moving packets between nodes
+  - Detection alerts (chainsaw 🪚, frog 🐸) shown as pulsating markers at the originating node
+  - A simulation timeline and event log overlay
+- **AND** the output video is saved to `sim_output/musa_simulation.mp4` with a minimum resolution of 1920×1080 at 30 FPS
+
+#### Scenario: Real-Time Satellite-Like Overlay
+- **WHEN** the visualizer renders the map
+- **THEN** it includes a stylized forest background with contour lines representing the MUSA reserve terrain
+- **AND** LoRa radio coverage circles are drawn around each node to visualize communication range
+- **AND** a status dashboard panel shows live battery, RSSI, and detection counts per node
