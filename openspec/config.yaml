@@ -5,56 +5,54 @@ metadata:
   description: "Sistema de monitoramento acústico de baixo consumo para detecção de desmatamento."
   author: "ARPT - Amazon Rainforest Protection"
 
-# Definição do Computador de Borda (Raspberry Pi 3 Model B)
+# Definição do MCU (ESP32-S3)
 compute:
-  architecture: "aarch64"
-  platform: "raspberry-pi-3b"
-  soc: "BCM2837"
-  peripheral_base: "0x3F000000"
+  architecture: "xtensa"
+  platform: "esp-idf"
+  soc: "ESP32-S3"
   cpu:
     clusters:
-      - cores: 4
-        type: "Cortex-A53"
-        max_frequency_mhz: 1200
+      - cores: 2
+        type: "LX7"
+        max_frequency_mhz: 240
   memory:
-    total_mb: 1024
-    type: "LPDDR2"
+    internal_kb: 512
+    psram_mb: 8
 
-# Definição do Sensor de Áudio (Exposto pelo Driver Rust)
+# Definição do Sensor de Áudio
 sensors:
   - id: "i2s_mic_0"
     type: "audio"
     interface: "I2S"
-    driver: "rust_kernel_module_v1" # O driver que vamos escrever
-    device_path: "/dev/forest_audio"
+    driver: "esp-idf-i2s"
     capabilities:
-      sampling_rate_hz: 16000 # Otimizado para sons de baixa frequência (motoserras)
-      bit_depth: 24
+      sampling_rate_hz: 44100
+      bit_depth: 32
       channels: 1
-      buffer_size_kb: 64
+      buffer_strategy: "zero-copy-ring-buffer"
 
-# Restrições de Energia (Crítico para operação solar/bateria)
+# Restrições de Energia (Otimizado para ESP32-S3)
 power_constraints:
-  max_power_mw: 500
+  max_power_mw: 250
   sleep_modes:
     - mode: "deep_sleep"
-      consumption_uw: 50
-      wake_up_time_ms: 1500
-  duty_cycle:
-    active_ms: 5000  # Escuta por 5 segundos
-    idle_ms: 55000   # Dorme por 55 segundos
+      consumption_uw: 10
+      wake_up_time_ms: 500
+    - mode: "light_sleep"
+      consumption_uw: 800
+      wake_up_time_ms: 1
 
 # Requisitos para o Modelo de IA (Edge Inference)
 ai_requirements:
   framework: "tflite_micro"
-  precision: "int8" # Quantização obrigatória para baixo consumo
-  input_shape: [1, 16000, 1] # 1 segundo de áudio bruto
-  target_latency_ms: 300
-  min_confidence: 0.85
+  precision: "int8"
+  input_shape: [1, 88200, 1] # 2 segundos @ 44.1kHz
+  target_latency_ms: 100
+  min_confidence: 0.80
 
-# Interface de Saída (Comunicação de Longo Alcance)
+# Interface de Saída (LoRa Mesh)
 telemetry:
-  protocol: "lorawan"
-  region: "AU915" # Padrão usado no Brasil
+  protocol: "lora_mesh"
+  region: "AU915"
   mesh_support: true
-  alert_threshold: "critical" # Só envia se detectar motoserra
+  payload_format: "json_compact"
