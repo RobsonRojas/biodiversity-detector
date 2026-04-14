@@ -24,6 +24,33 @@ void TelemetryManager::record_detection(const std::string& label) {
     biodiversity_stats_[label]++;
 }
 
+void TelemetryManager::pack_beacon(uint8_t node_id, double lat, double lon, double acc, uint8_t hops, std::vector<uint8_t>& buffer) {
+    BeaconPacket packet;
+    packet.type = PACKET_TYPE_BEACON;
+    packet.node_id = node_id;
+    packet.lat_e7 = (uint32_t)((lat + 90.0) * 1e7);
+    packet.lon_e7 = (uint32_t)((lon + 180.0) * 1e7);
+    packet.accuracy = (uint16_t)(acc * 10.0);
+    packet.hop_count = hops;
+
+    buffer.assign((uint8_t*)&packet, (uint8_t*)&packet + sizeof(BeaconPacket));
+}
+
+bool TelemetryManager::unpack_beacon(const uint8_t* buffer, size_t len, uint8_t& node_id, double& lat, double& lon, double& acc, uint8_t& hops) {
+    if (len < sizeof(BeaconPacket)) return false;
+    
+    const BeaconPacket* packet = (const BeaconPacket*)buffer;
+    if (packet->type != PACKET_TYPE_BEACON) return false;
+
+    node_id = packet->node_id;
+    lat = ((double)packet->lat_e7 / 1e7) - 90.0;
+    lon = ((double)packet->lon_e7 / 1e7) - 180.0;
+    acc = (double)packet->accuracy / 10.0;
+    hops = packet->hop_count;
+
+    return true;
+}
+
 std::string TelemetryManager::format_payload(const TelemetryData& data) {
     std::stringstream ss;
     ss << "TELEMETRY"

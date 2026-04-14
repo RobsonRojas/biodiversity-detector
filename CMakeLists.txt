@@ -28,6 +28,7 @@ add_library(GuardianCore
     src/telemetry/SimulatedLoRaDriver.cpp
     src/telemetry/PhysicalLoRaDriver.cpp
     src/telemetry/MeshProtocol.cpp
+    src/telemetry/localization_module.cpp
     src/telemetry/ConfigParser.cpp
     src/telemetry/TelegramClient.cpp
     src/telemetry/RTCStore.cpp

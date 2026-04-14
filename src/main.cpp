@@ -21,6 +21,7 @@
 #include "telemetry/SupabaseClient.hpp"
 #include "telemetry/TelegramClient.hpp"
 #include "telemetry/OfflineQueue.hpp"
+#include "telemetry/localization_module.hpp"
 
 using namespace guardian;
 
@@ -33,7 +34,20 @@ void heartbeat_loop(AlertManager& alert_manager) {
         int8_t mock_rssi = -70 - (rand() % 40);
         
         std::cout << "[SYSTEM] Sending periodic Mesh Heartbeat (Bat: " << mock_bat << "mV, RSSI: " << (int)mock_rssi << "dBm)..." << std::endl;
-        alert_manager.send_heartbeat(mock_bat, mock_rssi);
+        
+        // Broadcast location if we have it
+        NodeCoords pos = alert_manager.get_localization_engine()->get_current_coords();
+        if (pos.accuracy < 500) {
+            std::string beacon = "BEACON:" + std::to_string(alert_manager.get_config().node_id) +
+                                ":" + std::to_string(pos.lat) +
+                                ":" + std::to_string(pos.lon) +
+                                ":" + std::to_string(pos.accuracy) +
+                                ":" + std::to_string(pos.hop_count);
+            // We piggyback location on heartbeats for simulation simplicity
+            alert_manager.send_heartbeat(mock_bat, mock_rssi, beacon);
+        } else {
+            alert_manager.send_heartbeat(mock_bat, mock_rssi);
+        }
         
         std::this_thread::sleep_for(std::chrono::seconds(30));
     }
@@ -137,14 +151,18 @@ int main(int argc, char* argv[]) {
     auto client = std::make_shared<telemetry::TelegramClient>(telemetry::TelegramConfig{"dummy", "dummy"});
     auto queue = std::make_shared<telemetry::OfflineQueue>("queue.db");
 
-    const char* sb_url = std::getenv("SUPABASE_URL");
-    const char* sb_key = std::getenv("SUPABASE_KEY");
-    auto supabase = std::make_shared<telemetry::SupabaseClient>(
-        sb_url ? sb_url : "https://dummy.supabase.co", 
-        sb_key ? sb_key : "dummy_key"
-    );
-    
-    AlertManager alert_manager(config, client, queue, lora, supabase);
+    LocalizationEngine localization;
+    const char* role_env = std::getenv("NODE_ROLE");
+    if (role_env && std::string(role_env) == "Gateway") {
+        const char* lat_env = std::getenv("SIM_LAT");
+        const char* lon_env = std::getenv("SIM_LON");
+        if (lat_env && lon_env) {
+            localization.set_anchor(std::stod(lat_env), std::stod(lon_env));
+            std::cout << "[Localization] Gateway Anchor Set: " << lat_env << ", " << lon_env << std::endl;
+        }
+    }
+
+    AlertManager alert_manager(config, client, queue, lora, supabase, &localization);
 
     audio::AudioIn audio_in(device_path);
     audio::CircularBuffer buffer(32000); // 2 seconds capacity

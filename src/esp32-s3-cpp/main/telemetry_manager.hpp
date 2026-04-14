@@ -20,6 +20,37 @@
 #include <string>
 #include <map>
 #include <stdint.h>
+#include <vector>
+
+#define PACKET_TYPE_BEACON 0x01
+#define PACKET_TYPE_TELEMETRY 0x02
+
+/**
+ * @struct BeaconPacket
+ * @brief Binary structure for mesh-wide localization beacons (14 bytes)
+ */
+struct __attribute__((packed)) BeaconPacket {
+    uint8_t type;       // 0x01
+    uint8_t node_id;
+    uint32_t lat_e7;    // (lat + 90) * 1e7
+    uint32_t lon_e7;    // (lon + 180) * 1e7
+    uint16_t accuracy;  // meters * 10
+    uint8_t hop_count;
+};
+
+/**
+ * @struct TelemetryPacket
+ * @brief Binary structure for periodic telemetry (variable)
+ */
+struct __attribute__((packed)) TelemetryPacket {
+    uint8_t type;       // 0x02
+    uint8_t node_id;
+    uint8_t battery;    // 0-100
+    int8_t rssi;        // dBm
+    uint32_t uptime;    // seconds
+    uint32_t lat_e7;
+    uint32_t lon_e7;
+};
 
 /**
  * @brief Structure to hold all telemetry data points.
@@ -52,7 +83,15 @@ public:
      * @param data Current sensor and system data
      * @return std::string Formatted payload
      */
-    std::string format_payload(const TelemetryData& data);
+    /**
+     * @brief Generate a binary beacon for localization propagation
+     */
+    void pack_beacon(uint8_t node_id, double lat, double lon, double acc, uint8_t hops, std::vector<uint8_t>& buffer);
+
+    /**
+     * @brief Parse a binary beacon
+     */
+    bool unpack_beacon(const uint8_t* buffer, size_t len, uint8_t& node_id, double& lat, double& lon, double& acc, uint8_t& hops);
 
 private:
     std::map<std::string, int> biodiversity_stats_;

@@ -22,7 +22,7 @@
 /**
  * @brief Initialize Localization Engine
  */
-LocalizationEngine::LocalizationEngine() : current_coords_{0,0,100,0} {}
+LocalizationEngine::LocalizationEngine() : current_coords_{0.0, 0.0, 1000.0, 0, 255} {}
 
 /**
  * @brief Update the node's position estimate based on neighbor beacons
@@ -49,6 +49,7 @@ void LocalizationEngine::set_anchor(double lat, double lon) {
     current_coords_.lat = lat;
     current_coords_.lon = lon;
     current_coords_.accuracy = 1.0; // 1 meter precision for gateway-anchor
+    current_coords_.hop_count = 0;   // Gateway is hop 0
 }
 
 /**
@@ -99,6 +100,16 @@ bool LocalizationEngine::calculate_position() {
         current_coords_.lat = current_lat;
         current_coords_.lon = current_lon;
         current_coords_.accuracy = final_error;
+        
+        // Propagate hop count: min(neighbor_hops) + 1
+        uint8_t min_hops = 255;
+        for (const auto& anchor : test_anchors) {
+            if (anchor.coords.hop_count < min_hops) {
+                min_hops = anchor.coords.hop_count;
+            }
+        }
+        current_coords_.hop_count = (min_hops < 255) ? (min_hops + 1) : 255;
+        
         return true;
     }
     
@@ -116,19 +127,35 @@ double LocalizationEngine::rssi_to_distance(int rssi) {
 }
 
 /**
- * @brief Sum of squared residuals for trilateration
+ * @brief Sum of squared residuals for trilateration (Weighted Least Squares)
  */
 double LocalizationEngine::calculate_error(double lat, double lon, const std::vector<Anchor>& test_anchors) {
-    double total_error = 0;
+    double total_weighted_error = 0;
+    double total_weight = 0;
+
     for (const auto& anchor : test_anchors) {
+        double weight = calculate_weight(anchor);
+        
         // Simple Euclidean distance for lat/lon as nodes are close (~50-200m)
-        // 0.00001 degrees is ~1.1 meters
         double d_lat = (lat - anchor.coords.lat) * 111320.0; // Approx m/deg
         double d_lon = (lon - anchor.coords.lon) * 111320.0 * cos(lat * M_PI / 180.0);
         double dist = sqrt(d_lat*d_lat + d_lon*d_lon);
         
         double residual = dist - anchor.distance_m;
-        total_error += residual * residual;
+        total_weighted_error += weight * (residual * residual);
+        total_weight += weight;
     }
-    return sqrt(total_error / test_anchors.size());
+    
+    return sqrt(total_weighted_error / total_weight);
+}
+
+/**
+ * @brief Calculate anchor weight based on its reported accuracy and hop count
+ */
+double LocalizationEngine::calculate_weight(const Anchor& anchor) {
+    // Weight is inversely proportional to accuracy and hop count
+    // Lower accuracy (higher meters) and higher hop count => lower weight
+    double accuracy_weight = 1.0 / (anchor.coords.accuracy + 1.0);
+    double hop_penalty = 1.0 / (double)(anchor.coords.hop_count + 1);
+    return accuracy_weight * hop_penalty;
 }

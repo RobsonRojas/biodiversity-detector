@@ -72,6 +72,19 @@ extern "C" void app_main(void)
         return;
     }
 
+    // Role-based configuration for localization
+    const char* role_env = getenv("NODE_ROLE");
+    if (role_env && strcmp(role_env, "Gateway") == 0) {
+        const char* lat_env = getenv("SIM_LAT");
+        const char* lon_env = getenv("SIM_LON");
+        if (lat_env && lon_env) {
+            double lat = strtod(lat_env, NULL);
+            double lon = strtod(lon_env, NULL);
+            localization.set_anchor(lat, lon);
+            ESP_LOGI(TAG, "Node configured as GATEWAY Anchor at (%f, %f)", lat, lon);
+        }
+    }
+
     // Link LoRa to Localization for simulation propagation
     lora.set_localization_engine(&localization);
 
@@ -145,9 +158,9 @@ extern "C" void app_main(void)
             }
         }
 
-        // --- Periodic Telemetry ---
+        // --- Periodic Telemetry & Beacon ---
         if ((xTaskGetTickCount() - last_telemetry_tick) > pdMS_TO_TICKS(TELEMETRY_INTERVAL)) {
-            ESP_LOGI(TAG, "Aggregating real telemetry data...");
+            ESP_LOGI(TAG, "Aggregating telemetry and broadcasting beacon...");
             
             TelemetryData data;
             data.battery_level = battery.get_battery_level();
@@ -158,13 +171,22 @@ extern "C" void app_main(void)
             data.lat = current_pos.lat;
             data.lon = current_pos.lon;
             data.accuracy = current_pos.accuracy;
-            
             data.detection_counts = session_detections;
 
+            // 1. Send Standard Telemetry (String for legacy/debug)
             std::string payload = telemetry_mgr.format_payload(data);
-            ESP_LOGI(TAG, "Sending telemetry: %s", payload.c_str());
-            
             lora.send((uint8_t*)payload.c_str(), payload.length());
+            
+            // 2. Send Localization Beacon (Binary)
+            // Only broadcast as an anchor if we have reasonable accuracy
+            if (current_pos.accuracy < 500.0) {
+                std::vector<uint8_t> beacon_buf;
+                telemetry_mgr.pack_beacon(1, current_pos.lat, current_pos.lon, 
+                                        current_pos.accuracy, current_pos.hop_count, beacon_buf);
+                lora.send(beacon_buf.data(), beacon_buf.size());
+                ESP_LOGI(TAG, "Broadcasted binary beacon (Hop: %d, Acc: %.1fm)", 
+                         current_pos.hop_count, current_pos.accuracy);
+            }
             
             last_telemetry_tick = xTaskGetTickCount();
         }

@@ -29,8 +29,9 @@
 struct NodeCoords {
     double lat;
     double lon;
-    double accuracy; // in meters (radius)
+    double accuracy;    // in meters (radius)
     uint32_t last_update;
+    uint8_t hop_count; // Distance from physical gateway anchor
 };
 
 /**
@@ -78,5 +79,6 @@ private:
     const double REFERENCE_RSSI = -45.0; // RSSI at 1 meter
     
     double rssi_to_distance(int rssi);
-    double calculate_error(double x, double y, const std::vector<Anchor>& test_anchors);
+    double calculate_error(double lat, double lon, const std::vector<Anchor>& test_anchors);
+    double calculate_weight(const Anchor& anchor);
 };
