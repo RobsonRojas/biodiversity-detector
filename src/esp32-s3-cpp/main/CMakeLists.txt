@@ -9,5 +9,5 @@ idf_component_register(SRCS "main.cpp"
                            "i2s_low_level.cpp"
                            "shared_ring_buffer.cpp"
                            "localization_module.cpp"
-                    INCLUDE_DIRS "."
-                    REQUIRES esp_timer esp_system esp_driver_spi esp_adc esp_driver_gpio hal esp_rom esp_driver_i2s)
+                    INCLUDE_DIRS "." "edge-impulse-sdk"
+                    REQUIRES esp_timer esp_system esp_driver_spi esp_adc esp_driver_gpio hal esp_rom esp_driver_i2s esp_driver_uart)

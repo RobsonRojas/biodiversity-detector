@@ -150,6 +150,7 @@ int main(int argc, char* argv[]) {
     // Client and queue could be properly initialized if needed
     auto client = std::make_shared<telemetry::TelegramClient>(telemetry::TelegramConfig{"dummy", "dummy"});
     auto queue = std::make_shared<telemetry::OfflineQueue>("queue.db");
+    auto supabase = std::make_shared<telemetry::SupabaseClient>("https://dummy.supabase.co", "dummy_key");
 
     LocalizationEngine localization;
     const char* role_env = std::getenv("NODE_ROLE");

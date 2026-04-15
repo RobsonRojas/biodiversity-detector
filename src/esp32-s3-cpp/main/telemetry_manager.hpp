@@ -83,6 +83,8 @@ public:
      * @param data Current sensor and system data
      * @return std::string Formatted payload
      */
+    std::string format_payload(const TelemetryData& data);
+
     /**
      * @brief Generate a binary beacon for localization propagation
      */

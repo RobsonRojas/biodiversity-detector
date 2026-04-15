@@ -20,7 +20,7 @@ Architectures: arm64" > /etc/apt/sources.list.d/arm64.sources
 RUN apt-get update && apt-get install -y \
     python3 python3-numpy qemu-user-static \
     build-essential cmake git crossbuild-essential-arm64 \
-    curl
+    curl libcurl4-openssl-dev:arm64
 
 # Install Rust for the builder
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable && \

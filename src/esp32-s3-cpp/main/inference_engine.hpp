@@ -21,24 +21,19 @@
 #include <vector>
 #include <string>
 #include <memory>
-
-#include "tensorflow/lite/micro/micro_interpreter.h"
-#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
-#include "tensorflow/lite/schema/schema_generated.h"
-
 #include <cstddef>
 
-// Psuedo-forward-declare TfLiteTensor to avoid including the whole common header if not needed
-struct TfLiteTensor;
-
 /**
- * @brief Real AI inference engine using TensorFlow Lite Micro.
+ * @brief Simplified AI inference engine (stub implementation).
  *
- * Loads an embedded TFLite model, allocates the tensor arena in PSRAM,
- * and runs multi-class classification on normalized audio features.
+ * Allocates the tensor arena in PSRAM and provides classification interface.
+ * This is a mock implementation for development purposes.
  */
 class InferenceEngine {
 public:
+    static constexpr size_t kTensorArenaSize = 256 * 1024; // 256 KB
+    static constexpr int kCategoryCount = 3;
+    
     InferenceEngine();
     ~InferenceEngine();
 
@@ -47,14 +42,14 @@ public:
     InferenceEngine& operator=(const InferenceEngine&) = delete;
 
     /**
-     * @brief Initialize the TFLite interpreter and allocate tensors.
-     * @return ESP_OK on success, or an error code if the model fails to load.
+     * @brief Initialize the inference engine and allocate tensors.
+     * @return ESP_OK on success, or an error code if allocation fails.
      */
     esp_err_t init();
 
     /**
-     * @brief Run inference on normalized audio features.
-     * @param signal      Pointer to float array of normalized audio features.
+     * @brief Run inference on audio signal.
+     * @param signal      Pointer to float array of audio features.
      * @param signal_len  Number of elements in signal.
      * @param result_label [out] Name of the class with highest probability.
      * @param confidence   [out] Probability value (0.0 – 1.0) of the top class.
@@ -68,10 +63,10 @@ private:
 
     // PSRAM-backed arena managed via RAII.
     std::unique_ptr<uint8_t, void(*)(void*)> tensor_arena_;
-
-    // TFLite Micro objects (opaque pointers; impl owns lifetime).
-    const tflite::Model*model_;
-    std::unique_ptr<tflite::MicroOpResolver> resolver_;
-    std::unique_ptr<tflite::MicroInterpreter> interpreter_;
-    TfLiteTensor* input_tensor_;
+    
+    // Placeholder pointers (not used in stub implementation)
+    void* model_;
+    void* resolver_;
+    void* interpreter_;
+    void* input_tensor_;
 };

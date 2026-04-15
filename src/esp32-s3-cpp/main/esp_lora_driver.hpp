@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include "localization_module.hpp"
 
 /**
  * @brief Native ESP-IDF LoRa driver for SX126x/SX127x chips.
@@ -59,12 +60,12 @@ public:
     /**
      * @brief Set the localization engine to update on neighbor beacons
      */
-    void set_localization_engine(class LocalizationEngine* engine) { localization_engine_ = engine; }
+    void set_localization_engine(LocalizationEngine* engine) { localization_engine_ = engine; }
 
 private:
     spi_device_handle_t spi_handle_;
     int last_rssi_;
-    class LocalizationEngine* localization_engine_;
+    LocalizationEngine* localization_engine_;
     
     // Low-level SPI operations
     void write_reg(uint8_t addr, uint8_t val);

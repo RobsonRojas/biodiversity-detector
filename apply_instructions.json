@@ -1,0 +1,85 @@
+{
+  "changeName": "firmware-to-esp32-s3-cpp",
+  "changeDir": "/media/rob/windows5/git/motoserra-detect-system/openspec/changes/firmware-to-esp32-s3-cpp",
+  "schemaName": "spec-driven",
+  "contextFiles": {
+    "proposal": "/media/rob/windows5/git/motoserra-detect-system/openspec/changes/firmware-to-esp32-s3-cpp/proposal.md",
+    "specs": "/media/rob/windows5/git/motoserra-detect-system/openspec/changes/firmware-to-esp32-s3-cpp/specs/**/*.md",
+    "design": "/media/rob/windows5/git/motoserra-detect-system/openspec/changes/firmware-to-esp32-s3-cpp/design.md",
+    "tasks": "/media/rob/windows5/git/motoserra-detect-system/openspec/changes/firmware-to-esp32-s3-cpp/tasks.md"
+  },
+  "progress": {
+    "total": 13,
+    "complete": 0,
+    "remaining": 13
+  },
+  "tasks": [
+    {
+      "id": "1",
+      "description": "1.1 Create `src/esp32-s3-cpp` directory and initialize ESP-IDF project with CMake.",
+      "done": false
+    },
+    {
+      "id": "2",
+      "description": "1.2 Configure `sdkconfig` for ESP32-S3 with PSRAM and low-power optimzations.",
+      "done": false
+    },
+    {
+      "id": "3",
+      "description": "1.3 Add dependencies: `esp-dsp`, `esp_nn`, and Edge Impulse C++ SDK.",
+      "done": false
+    },
+    {
+      "id": "4",
+      "description": "2.1 Implement I2S microphone driver with DMA and double-buffering.",
+      "done": false
+    },
+    {
+      "id": "5",
+      "description": "2.2 Implement 256-point FFT spectral analysis using `esp-dsp`.",
+      "done": false
+    },
+    {
+      "id": "6",
+      "description": "2.3 Create RMS threshold logic for the ULP/RTC wake-up phase.",
+      "done": false
+    },
+    {
+      "id": "7",
+      "description": "3.1 Integrate Edge Impulse C++ bundle and TFLite Micro runtime.",
+      "done": false
+    },
+    {
+      "id": "8",
+      "description": "3.2 Implement inference wrapper with sliding window for audio classification.",
+      "done": false
+    },
+    {
+      "id": "9",
+      "description": "3.3 Port LoRa mesh communication logic to C++ and integrate with the alert system.",
+      "done": false
+    },
+    {
+      "id": "10",
+      "description": "4.1 Create `docs/architecture.md` with sequence diagrams for power cycles and data flow.",
+      "done": false
+    },
+    {
+      "id": "11",
+      "description": "4.2 Configure Doxygen for API documentation generation.",
+      "done": false
+    },
+    {
+      "id": "12",
+      "description": "4.3 Develop `examples/` directory with standalone modules for I2S, DSP, and AI.",
+      "done": false
+    },
+    {
+      "id": "13",
+      "description": "4.4 Create `README.md` and `DEVELOPMENT.md` in the firmware directory with full integration examples.",
+      "done": false
+    }
+  ],
+  "state": "ready",
+  "instruction": "Read context files, work through pending tasks, mark complete as you go.\nPause if you hit blockers or need clarification."
+}
