@@ -1,5 +1,5 @@
 // ESP32-S3 Repl for Renode
-// Models a basic Xtensa LX7 platform with UART and RAM
+// Models a basic Xtensa LX7 platform with UART, I2S, and RAM
 
 cpu: CPU.Xtensa @ sysbus
     cpuType: "lx7"
@@ -14,6 +14,22 @@ rtc_ram: Memory.MappedMemory @ sysbus 0x50000000
 uart0: UART.NS16550 @ sysbus 0x60000000
     size: 0x100
 
+// I2S Audio Interface (Mock)
+// Simulates PDM microphone data
+i2s0: Memory.MappedMemory @ sysbus 0x60020000
+    size: 0x200
+
+i2s_fifo: Memory.MappedMemory @ sysbus 0x3f200000
+    size: 0x10000 // 64KB audio buffer
+
 // Placeholder for I2S audio mock memory region
 audio_mock: Memory.MappedMemory @ sysbus 0x3F203000
     size: 0x1000
+
+// GPIO (simplified)
+gpio: Memory.MappedMemory @ sysbus 0x60004000
+    size: 0x100
+
+// ADC for battery monitoring (mock)
+adc: Memory.MappedMemory @ sysbus 0x60059000
+    size: 0x100

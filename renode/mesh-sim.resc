@@ -1,53 +1,248 @@
 :name: Patronos Forest Guardian Mesh Simulation
-:description: Simulates 5 nodes running the LoRa mesh network and audio ingestion
+:description: Simulates 5 nodes running the LoRa mesh network with energy monitoring
 
 using sysbus
 
-# Create a shared radio medium
-# Using common medium for radio simulation in Renode 1.16+
-emulation CreateIEEE802_15_4Medium "wireless"
+echo "=== Initializing Forest Guardian Mesh Network ==="
+echo "Creating 5-node LoRa mesh topology with energy monitoring..."
 
-# Base node definition macro
-macro setup_node
+# Create nodes dictionary to track them
+python "nodes = {}"
+
+# Python utilities for simulation
+python "import sys; sys.path.append('renode')"
+python "import audio_mock_script"
+python "import energy_monitor"
+
+# Gateway Node (Node 5) - Central aggregation point
+mach create "Gateway_Node5"
+machine LoadPlatformDescription @renode/esp32s3.repl
+python "nodes['Gateway'] = monitor.Machine"
+
+# Configure Gateway with environment variables
+python "
+import os
+os.environ['NODE_ID'] = '5'
+os.environ['NODE_ROLE'] = 'Gateway'
+os.environ['SIM_LAT'] = '-10.1234'
+os.environ['SIM_LON'] = '-55.5678'
+"
+
+$bin?=@dist/esp32.bin
+sysbus LoadBinary $bin 0x40370000
+
+emulation CreateServerSocketTerminal 45679 "gateway-uart"
+connector Connect uart0 "gateway-uart"
+
+python "
+gateway_injector = audio_mock_script.get_injector(monitor.Machine)
+gateway_energy = energy_monitor.get_monitor(monitor.Machine)
+gateway_energy.set_state('idle')
+gateway_energy.set_rssi(-60)  # Gateway has good signal
+"
+
+echo "✓ Gateway Node 5 created at :45679"
+
+# Router Node 4 - Intermediate relay
+mach create "Router_Node4"
+machine LoadPlatformDescription @renode/esp32s3.repl
+python "nodes['Router4'] = monitor.Machine"
+
+python "
+import os
+os.environ['NODE_ID'] = '4'
+os.environ['NODE_ROLE'] = 'Router'
+os.environ['LORA_DRIVER'] = 'physical'
+"
+
+sysbus LoadBinary $bin 0x40370000
+emulation CreateServerSocketTerminal 45680 "router4-uart"
+connector Connect uart0 "router4-uart"
+
+python "
+router4_injector = audio_mock_script.get_injector(monitor.Machine)
+router4_energy = energy_monitor.get_monitor(monitor.Machine)
+router4_energy.set_state('idle')
+router4_energy.set_rssi(-75)
+"
+
+echo "✓ Router Node 4 created at :45680"
+
+# Router Node 3 - Intermediate relay
+mach create "Router_Node3"
+machine LoadPlatformDescription @renode/esp32s3.repl
+python "nodes['Router3'] = monitor.Machine"
+
+python "
+import os
+os.environ['NODE_ID'] = '3'
+os.environ['NODE_ROLE'] = 'Router'
+os.environ['LORA_DRIVER'] = 'physical'
+"
+
+sysbus LoadBinary $bin 0x40370000
+emulation CreateServerSocketTerminal 45681 "router3-uart"
+connector Connect uart0 "router3-uart"
+
+python "
+router3_injector = audio_mock_script.get_injector(monitor.Machine)
+router3_energy = energy_monitor.get_monitor(monitor.Machine)
+router3_energy.set_state('idle')
+router3_energy.set_rssi(-85)
+"
+
+echo "✓ Router Node 3 created at :45681"
+
+# Router Node 2 - Intermediate relay
+mach create "Router_Node2"
+machine LoadPlatformDescription @renode/esp32s3.repl
+python "nodes['Router2'] = monitor.Machine"
+
+python "
+import os
+os.environ['NODE_ID'] = '2'
+os.environ['NODE_ROLE'] = 'Router'
+os.environ['LORA_DRIVER'] = 'physical'
+"
+
+sysbus LoadBinary $bin 0x40370000
+emulation CreateServerSocketTerminal 45682 "router2-uart"
+connector Connect uart0 "router2-uart"
+
+python "
+router2_injector = audio_mock_script.get_injector(monitor.Machine)
+router2_energy = energy_monitor.get_monitor(monitor.Machine)
+router2_energy.set_state('idle')
+router2_energy.set_rssi(-90)
+"
+
+echo "✓ Router Node 2 created at :45682"
+
+# Leaf Node 1 - Sensor node
+mach create "Leaf_Node1"
+machine LoadPlatformDescription @renode/esp32s3.repl
+python "nodes['Leaf1'] = monitor.Machine"
+
+python "
+import os
+os.environ['NODE_ID'] = '1'
+os.environ['NODE_ROLE'] = 'Sensor'
+os.environ['LORA_DRIVER'] = 'simulated'
+os.environ['SIM_DISABLE_SLEEP'] = '1'
+"
+
+sysbus LoadBinary $bin 0x40370000
+emulation CreateServerSocketTerminal 45683 "leaf1-uart"
+connector Connect uart0 "leaf1-uart"
+
+python "
+leaf1_injector = audio_mock_script.get_injector(monitor.Machine)
+leaf1_energy = energy_monitor.get_monitor(monitor.Machine)
+leaf1_energy.set_state('idle')
+leaf1_energy.set_rssi(-110)  # Weakest signal
+"
+
+echo "✓ Leaf Node 1 created at :45683"
+
+# Python helper functions for mesh simulation
+python "
+import sys
+sys.path.append('renode')
+
+class MeshSimulator:
+    def __init__(self, nodes_dict):
+        self.nodes = nodes_dict
+        self.packet_log = []
+    
+    def trigger_detection(self, node_id, event_type='chainsaw'):
+        '''Inject a detection event on a specific node'''
+        node_name = f'Node{node_id}'
+        trigger_file = f'/tmp/node{node_id}_{event_type}_trigger'
+        print(f'[MESH] Triggering {event_type} detection on Node {node_id}')
+        self.packet_log.append(f'Node{node_id}: {event_type} detection')
+    
+    def propagate_packet(self, src_node, packet_type):
+        '''Simulate packet propagation through mesh'''
+        print(f'[MESH] Packet propagation: {packet_type} from Node {src_node}')
+        # Energy cost: TX on source, RX on relay nodes
+        energy_monitor.set_state(nodes.get(f'Node{src_node}'), 'lora_tx')
+    
+    def print_mesh_status(self):
+        '''Print current mesh network status'''
+        print(f'[MESH] Network Status:')
+        print(f'  Active Nodes: {len(self.nodes)}')
+        for role, node in self.nodes.items():
+            energy = energy_monitor.get_monitor(node)
+            battery = energy.get_battery_percent()
+            rssi = energy.get_rssi()
+            print(f'    - {role:15s}: Battery={battery:5.1f}%, RSSI={rssi:4d}dBm')
+        print(f'  Packets transmitted: {len(self.packet_log)}')
+
+mesh = MeshSimulator(nodes)
+"
+
+# Macros for mesh operations
+macro trigger_chainsaw_on_node1
 """
-    mach create $name
-    machine LoadPlatformDescription @platforms/boards/cortex_a53_console.repl
-    
-    # Load the ELF binary
-    sysbus LoadELF $bin
-    
-    # Enable UART logging to file
-    machine CreateFileBackend $log "uart-backend"
-    connector Connect sysbus.uart0 "uart-backend"
-    
-    showAnalyzer sysbus.uart0
+    python \"mesh.trigger_detection(1, 'chainsaw')\"
 """
 
-# Define binary path
-$bin = @dist/app/guardian_node
+macro print_mesh_status
+"""
+    python \"mesh.print_mesh_status()\"
+"""
 
-# Setup 5 nodes
-$name="Gateway_Node5"  
-$log = @node5.log
-runMacro $setup_node
+macro print_energy_status
+"""
+    python \"energy_monitor.print_all_status()\"
+"""
 
-$name="Router_Node4"
-$log = @node4.log
-runMacro $setup_node
+macro simulate_mesh_detection
+"""
+    echo ''
+    echo '=== Simulating Chainsaw Detection Propagation ==='
+    python \"
+    leaf1_energy.set_state('audio_capture')
+    leaf1_injector.inject_synthetic_audio(200, 500)
+    mesh.trigger_detection(1, 'chainsaw')
+    \"
+    sleep 1
+    python \"
+    leaf1_energy.set_state('lora_tx')
+    mesh.propagate_packet(1, 'DETECTION')
+    \"
+    sleep 1
+    python \"
+    router2_energy.set_state('lora_rx')
+    router2_energy.set_state('lora_tx')
+    mesh.propagate_packet(2, 'RELAY')
+    \"
+    sleep 1
+    python \"
+    gateway_energy.set_state('lora_rx')
+    mesh.trigger_detection(5, 'alert_received')
+    mesh.print_mesh_status()
+    \"
+    echo '=== Detection Scenario Complete ==='
+    echo ''
+"""
 
-$name="Router_Node3"
-$log = @node3.log
-runMacro $setup_node
+macro write_energy_reports
+"""
+    python \"energy_monitor.write_all_reports()\"
+"""
 
-$name="Router_Node2"
-$log = @node2.log
-runMacro $setup_node
-
-$name="Leaf_Node1"
-$log = @node1.log
-runMacro $setup_node
-
-# Audio Ingestion python hook
+echo ""
+echo "=== Mesh Simulation Ready ==="
+echo "Available commands:"
+echo "  start                     - Start all nodes"
+echo "  pause                     - Pause simulation"
+echo "  trigger_chainsaw_on_node1 - Inject detection on Node 1"
+echo "  print_mesh_status         - Show network status"
+echo "  print_energy_status       - Show energy consumption"
+echo "  simulate_mesh_detection   - Run full mesh detection scenario"
+echo "  write_energy_reports      - Save energy reports to files"
+echo ""
 # We use a python script to simulate pushing wav data to Node 1's audio_mock memory
 python "import sys; sys.path.append('renode')"
 python "import audio_mock_script"

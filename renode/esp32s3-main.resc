@@ -1,7 +1,11 @@
 :name: ESP32-S3 Cascaded Firmware Simulation
-:description: Runs the Stage 1 -> Stage 2 -> Stage 3 cascaded detection loop
+:description: Runs the Stage 1 -> Stage 2 -> Stage 3 cascaded detection loop with energy monitoring
 
 using sysbus
+
+echo "=== ESP32-S3 Guardian Simulation ==="
+echo "Cascaded Detection Pipeline Test"
+echo ""
 
 mach create "ESP32S3_Node1"
 machine LoadPlatformDescription @renode/esp32s3.repl
@@ -14,18 +18,119 @@ connector Connect uart0 "uart-socket"
 $bin?=@dist/esp32.bin
 sysbus LoadBinary $bin 0x40370000
 
-
 // RTC Sleep Mock Hook: Monitor writes to 0x60008000 (RTC_CNTL_STATE0_REG)
-// and print a message for the simulator runner
-sysbus AddWatchpointHook 0x60008000 4 Write "antigravity.Log(LogLevel.Info, 'FIRMWARE_STATE: SLEEP_ENTRY')"
+sysbus AddWatchpointHook 0x60008000 4 Write "print '[FIRMWARE] Deep sleep triggered'"
 
-// Python script for audio injection
+// Python utilities for simulation
 python "import sys; sys.path.append('renode')"
 python "import audio_mock_script"
+python "import energy_monitor"
 
+// Create injector and monitor for this node
+python "
+injector = audio_mock_script.get_injector(monitor.Machine)
+monitor_energy = energy_monitor.get_monitor(monitor.Machine)
+monitor_energy.set_state('idle')
+"
+
+// Macros for audio injection
 macro inject_chainsaw
 """
-    python "audio_mock_script.inject_audio(monitor.Machine, 'assets/mocks/chainsaw_mock.wav')"
+    python \"
+    result = injector.inject_audio('assets/mocks/chainsaw_mock.wav')
+    if result:
+        monitor_energy.set_state('audio_capture')
+    \"
 """
 
-echo "ESP32-S3 Simulation Ready. Type 'start' to begin."
+macro inject_frog
+"""
+    python \"
+    result = injector.inject_audio('assets/mocks/frog_call.wav')
+    if result:
+        monitor_energy.set_state('audio_capture')
+    \"
+"""
+
+macro inject_synthetic_tone
+"""
+    python \"
+    injector.inject_synthetic_audio(440, 1000)
+    monitor_energy.set_state('audio_capture')
+    \"
+"""
+
+// Macros for power state simulation
+macro set_state_sleep
+"""
+    python \"monitor_energy.set_state('deep_sleep')\"
+    echo 'Power State: DEEP_SLEEP'
+"""
+
+macro set_state_active
+"""
+    python \"monitor_energy.set_state('cpu_active')\"
+    echo 'Power State: CPU_ACTIVE'
+"""
+
+macro set_state_lora_tx
+"""
+    python \"monitor_energy.set_state('lora_tx')\"
+    echo 'Power State: LORA_TX'
+"""
+
+// Macros for simulation control
+macro print_audio_status
+"""
+    python \"injector.print_status()\"
+"""
+
+macro print_energy_status
+"""
+    python \"monitor_energy.print_status()\"
+"""
+
+macro print_all_status
+"""
+    python \"
+    injector.print_status()
+    monitor_energy.print_status()
+    \"
+"""
+
+macro simulate_chainsaw_detection
+"""
+    echo ''
+    echo '>>> Starting Chainsaw Detection Scenario...'
+    set_state_active
+    inject_chainsaw
+    sleep 2
+    set_state_lora_tx
+    sleep 1
+    set_state_sleep
+    echo '<<< Scenario Complete'
+    echo ''
+"""
+
+macro write_energy_report
+"""
+    python \"monitor_energy.write_report('energy_report.txt')\"
+"""
+
+echo "✓ ESP32-S3 Simulation Ready!"
+echo ""
+echo "Available Commands:"
+echo "  start                        - Start simulation"
+echo "  pause                        - Pause simulation"
+echo "  inject_chainsaw              - Inject chainsaw audio"
+echo "  inject_frog                  - Inject frog call audio"
+echo "  inject_synthetic_tone        - Inject 440Hz tone"
+echo "  set_state_sleep              - Simulate deep sleep"
+echo "  set_state_active             - Simulate active CPU"
+echo "  set_state_lora_tx            - Simulate LoRa transmission"
+echo "  print_audio_status           - Show audio injector status"
+echo "  print_energy_status          - Show energy monitor status"
+echo "  print_all_status             - Show all status"
+echo "  simulate_chainsaw_detection  - Run full detection scenario"
+echo "  write_energy_report          - Save energy report to file"
+echo ""
