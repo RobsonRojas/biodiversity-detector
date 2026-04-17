@@ -23,16 +23,24 @@
 #include <memory>
 #include <cstddef>
 
+// Forward declarations for TFLite Micro types
+namespace tflite {
+    class Model;
+    class MicroInterpreter;
+    template <int tOpCount>
+    class MicroMutableOpResolver;
+}
+struct TfLiteTensor;
+
 /**
- * @brief Simplified AI inference engine (stub implementation).
+ * @brief AI inference engine using TensorFlow Lite Micro.
  *
- * Allocates the tensor arena in PSRAM and provides classification interface.
- * This is a mock implementation for development purposes.
+ * Allocates the tensor arena in PSRAM and executes quantized model classification.
  */
 class InferenceEngine {
 public:
     static constexpr size_t kTensorArenaSize = 256 * 1024; // 256 KB
-    static constexpr int kCategoryCount = 3;
+    static constexpr int kCategoryCount = 4; // Chainsaw, Animal, Insect, Background
     
     InferenceEngine();
     ~InferenceEngine();
@@ -64,9 +72,13 @@ private:
     // PSRAM-backed arena managed via RAII.
     std::unique_ptr<uint8_t, void(*)(void*)> tensor_arena_;
     
-    // Placeholder pointers (not used in stub implementation)
-    void* model_;
-    void* resolver_;
-    void* interpreter_;
-    void* input_tensor_;
+    // TFLite Micro components
+    const tflite::Model* model_;
+    tflite::MicroInterpreter* interpreter_;
+    TfLiteTensor* input_tensor_;
+    std::unique_ptr<tflite::MicroMutableOpResolver<15>> resolver_;
+
+    // Quantization parameters
+    float input_scale_;
+    int32_t input_zero_point_;
 };

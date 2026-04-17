@@ -1,1 +1,2 @@
-dependencies: {}
+dependencies:
+  espressif/esp-tflite-micro: "^1.0.0"
